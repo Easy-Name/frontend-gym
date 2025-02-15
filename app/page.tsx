@@ -25,53 +25,92 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 
-const formSchema = z.object({
+// Schema for login form
+const loginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8).max(50),
 });
 
-export default function LoginForm() {
+// Schema for registration form
+const registerSchema = z.object({
+  firstName: z.string().min(1, "O nome é obrigatório"),
+  lastName: z.string().min(1, "O sobrenome é obrigatório"),
+  telephone: z.string().min(10, "O telefone deve ter pelo menos 10 dígitos"),
+  email: z.string().email(),
+  password: z.string().min(8, "A senha deve ter pelo menos 8 caracteres"),
+});
+
+// Define a union type for the form values
+type FormValues = z.infer<typeof loginSchema> | z.infer<typeof registerSchema>;
+
+export default function AuthForm() {
+  const [isRegistering, setIsRegistering] = useState(false); // Toggle between login and register
   const [error, setError] = useState<string | null>(null); // State for error message
 
-  // 1. Define your form.
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+  // Use the appropriate schema based on the form type
+  const form = useForm<FormValues>({
+    resolver: zodResolver(isRegistering ? registerSchema : loginSchema),
     defaultValues: {
       email: "",
       password: "",
+      firstName: "",
+      lastName: "",
+      telephone: "",
     },
   });
 
-  // 2. Define a submit handler.
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  // Handle form submission
+  async function onSubmit(values: FormValues) {
     try {
       setError(null); // Clear any previous errors
 
-      const response = await axios.post("http://localhost:3005/auth/sign-in", {
-        email: values.email,
-        password: values.password,
-      });
+      if (isRegistering) {
+        // Narrow the type to registration values
+        const registrationValues = values as z.infer<typeof registerSchema>;
 
-      const { token, refreshToken } = response.data;
+        // Handle registration
+        const response = await axios.post("http://localhost:3005/professor", {
+          firstName: registrationValues.firstName,
+          lastName: registrationValues.lastName,
+          telephone: registrationValues.telephone,
+          email: registrationValues.email,
+          password: registrationValues.password,
+        });
 
-      // Store tokens in local storage
-      localStorage.setItem("token", token);
-      localStorage.setItem("refreshToken", refreshToken);
+        console.log("Registration successful:", response.data);
+        setIsRegistering(false); // Switch back to login form after successful registration
+      } else {
+        // Narrow the type to login values
+        const loginValues = values as z.infer<typeof loginSchema>;
 
-      //console.log("Login successful, tokens stored:", { token, refreshToken });
+        // Handle login
+        const response = await axios.post(
+          "http://localhost:3005/auth/sign-in",
+          {
+            email: loginValues.email,
+            password: loginValues.password,
+          }
+        );
 
-      // Redirect or update UI as needed
+        const { accessToken, refreshToken } = response.data;
+
+        // Store tokens in local storage
+        localStorage.setItem("token", accessToken);
+        localStorage.setItem("refreshToken", refreshToken);
+
+        console.log("Login successful, tokens stored:", {
+          accessToken,
+          refreshToken,
+        });
+      }
     } catch (error) {
-      console.error("Login failed:", error);
+      console.error("Error:", error);
 
       // Set error message based on the error
       if (axios.isAxiosError(error)) {
-        // Handle Axios-specific errors
-        setError("Credenciais inválidas");
-        //setError(error.response?.data?.message || "An error occurred during login.");
+        setError(error.response?.data?.message || "Ocorreu um erro.");
       } else {
-        // Handle generic errors
-        setError("An unexpected error occurred.");
+        setError("Ocorreu um erro inesperado.");
       }
     }
   }
@@ -80,9 +119,13 @@ export default function LoginForm() {
     <main className="flex h-screen justify-center items-center">
       <Card className="mx-auto max-w-sm">
         <CardHeader>
-          <CardTitle className="text-xl">Log in</CardTitle>
+          <CardTitle className="text-xl">
+            {isRegistering ? "Registre-se" : "Log in"}
+          </CardTitle>
           <CardDescription>
-            Acesse sua conta para gerenciar seus alunos
+            {isRegistering
+              ? "Crie sua conta para gerenciar seus alunos"
+              : "Acesse sua conta para gerenciar seus alunos"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -94,6 +137,56 @@ export default function LoginForm() {
 
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)}>
+                {isRegistering && (
+                  <>
+                    <div className="grid gap-2">
+                      <FormField
+                        control={form.control}
+                        name="firstName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Nome</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Nome" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <FormField
+                        control={form.control}
+                        name="lastName"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Sobrenome</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Sobrenome" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <FormField
+                        control={form.control}
+                        name="telephone"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Telefone</FormLabel>
+                            <FormControl>
+                              <Input placeholder="Telefone" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+                  </>
+                )}
+
                 <div className="grid gap-2">
                   <FormField
                     control={form.control}
@@ -128,16 +221,26 @@ export default function LoginForm() {
                     )}
                   />
                   <Button type="submit" className="w-full">
-                    Log in
+                    {isRegistering ? "Registrar" : "Log in"}
                   </Button>
                 </div>
               </form>
             </Form>
           </div>
           <div className="mt-4 text-center text-sm">
-            Ainda não possui uma conta?{" "}
-            <Link href="#" className="underline">
-              Registre-se
+            {isRegistering
+              ? "Já possui uma conta? "
+              : "Ainda não possui uma conta? "}
+            <Link
+              href="#"
+              className="underline"
+              onClick={(e) => {
+                e.preventDefault();
+                setIsRegistering(!isRegistering);
+                form.reset(); // Reset form fields when switching
+              }}
+            >
+              {isRegistering ? "Log in" : "Registre-se"}
             </Link>
           </div>
         </CardContent>
