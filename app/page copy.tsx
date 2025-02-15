@@ -4,8 +4,6 @@ import Link from "next/link";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
-import axios from "axios";
-import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,55 +22,61 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import {
+  PasswordInput
+} from "@/components/ui/password-input"
 
 const formSchema = z.object({
   email: z.string().email(),
-  password: z.string().min(8).max(50),
+  senha: z.string().min(8).max(50),
 });
 
 export default function LoginForm() {
-  const [error, setError] = useState<string | null>(null); // State for error message
-
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
+    /*defaultValues: {
       email: "",
-      password: "",
-    },
+      senha: "",
+    },*/
   });
 
   // 2. Define a submit handler.
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      setError(null); // Clear any previous errors
-
-      const response = await axios.post("http://localhost:3005/auth/sign-in", {
-        email: values.email,
-        password: values.password,
+      const response = await fetch("http://localhost:3005/auth/sign-in", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(values),
       });
 
-      const { token, refreshToken } = response.data;
+
+console.log(response.body);
+
+      if (!response.ok) {
+        console.log(response);
+        throw new Error("Login failed");
+      }
+
+      const data = await response.json();
+
+      // Assuming the response contains `token` and `refreshToken`
+      const { token, refreshToken } = data;
 
       // Store tokens in local storage
       localStorage.setItem("token", token);
       localStorage.setItem("refreshToken", refreshToken);
 
-      //console.log("Login successful, tokens stored:", { token, refreshToken });
+      console.log("Login successful, tokens stored:", { token, refreshToken });
 
-      // Redirect or update UI as needed
+      // Optionally, redirect the user or update the UI
+      // window.location.href = "/dashboard";
+
     } catch (error) {
-      console.error("Login failed:", error);
-
-      // Set error message based on the error
-      if (axios.isAxiosError(error)) {
-        // Handle Axios-specific errors
-        setError("Credenciais inválidas");
-        //setError(error.response?.data?.message || "An error occurred during login.");
-      } else {
-        // Handle generic errors
-        setError("An unexpected error occurred.");
-      }
+      console.error("Login error:", error);
+      // Optionally, display an error message to the user
     }
   }
 
@@ -82,16 +86,11 @@ export default function LoginForm() {
         <CardHeader>
           <CardTitle className="text-xl">Log in</CardTitle>
           <CardDescription>
-            Acesse sua conta para gerenciar seus alunos
+            Entre na sua conta para gerenciar seus alunos
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="grid gap-4">
-            {/* Display error message if exists */}
-            {error && (
-              <div className="text-red-500 text-sm text-center">{error}</div>
-            )}
-
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)}>
                 <div className="grid gap-2">
@@ -102,7 +101,7 @@ export default function LoginForm() {
                       <FormItem>
                         <FormLabel>Email</FormLabel>
                         <FormControl>
-                          <Input placeholder="Email" {...field} />
+                          <Input placeholder="Digite seu email" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -112,16 +111,12 @@ export default function LoginForm() {
                 <div className="grid gap-2">
                   <FormField
                     control={form.control}
-                    name="password"
+                    name="senha"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Senha</FormLabel>
                         <FormControl>
-                          <Input
-                            type="password"
-                            placeholder="Senha"
-                            {...field}
-                          />
+                          <PasswordInput placeholder="Digite sua senha" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
