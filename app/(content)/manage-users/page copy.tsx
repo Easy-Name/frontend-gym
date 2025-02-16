@@ -1,13 +1,13 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import axios from "axios";
-import { useState } from "react";
 
 // Define the User type
 type User = {
   id: number;
-  name: string;
-  lastname: string;
+  firstName: string;
+  lastName: string;
   email: string;
   telephone: string;
 };
@@ -24,24 +24,49 @@ export default function CRUDPage() {
     "create" | "update" | "delete" | null
   >(null);
 
+  // Fetch users from the backend on component mount
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const token = localStorage.getItem("token"); // or sessionStorage, or from state
+
+        if (!token) {
+          throw new Error("No access token found. Please log in again.");
+        }
+
+        const response = await axios.get("http://localhost:3005/users/me", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        // Assuming the response data is an array of users
+        setUsers(response.data);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+        // Handle the error (e.g., show a notification to the user)
+      }
+    };
+
+    fetchUsers();
+  }, []); // Empty dependency array ensures this runs only once on mount
+
   // Create a new user
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Create the new user object
     const newUser: User = {
       id: Date.now(), // Use a timestamp as a simple unique ID
-      name,
-      lastname,
+      firstName,
+      lastName,
       email,
       telephone,
     };
 
     try {
-      // Get the accessToken from where it's stored (e.g., localStorage, sessionStorage, or state)
-      const accessToken = localStorage.getItem("token"); // or sessionStorage, or from state
+      const token = localStorage.getItem("token"); // or sessionStorage, or from state
 
-      if (!accessToken) {
+      if (!token) {
         throw new Error("No access token found. Please log in again.");
       }
 
@@ -49,14 +74,14 @@ export default function CRUDPage() {
       const response = await axios.post(
         "http://localhost:3005/users/me",
         {
-          firstName: newUser.name,
-          lastName: newUser.lastname,
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
           telephone: newUser.telephone,
           email: newUser.email,
         },
         {
           headers: {
-            Authorization: `Bearer ${accessToken}`, // Include the accessToken in the request
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -74,15 +99,14 @@ export default function CRUDPage() {
   };
 
   // Update an existing user
-  const handleUpdate = (e: React.FormEvent) => {
+  const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedUserId !== null) {
       const updatedUsers = users.map((user) =>
         user.id === selectedUserId
-          ? { ...user, name, lastname, email, telephone }
+          ? { ...user, firstName, lastName, email, telephone }
           : user
       );
-      
       setUsers(updatedUsers);
       resetForm();
       setSelectedUserId(null);
@@ -91,7 +115,7 @@ export default function CRUDPage() {
   };
 
   // Delete a user
-  const handleDelete = (e: React.FormEvent) => {
+  const handleDelete = async (e: React.FormEvent) => {
     e.preventDefault();
     if (selectedUserId !== null) {
       const filteredUsers = users.filter((user) => user.id !== selectedUserId);
@@ -105,8 +129,8 @@ export default function CRUDPage() {
   // Set the selected user for update/delete
   const selectUser = (user: User) => {
     setSelectedUserId(user.id);
-    setName(user.name);
-    setLastname(user.lastname);
+    setName(user.firstName);
+    setLastname(user.lastName);
     setEmail(user.email);
     setTelephone(user.telephone);
   };
@@ -185,7 +209,7 @@ export default function CRUDPage() {
               </option>
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
-                  {user.name} {user.lastname}
+                  {user.firstName} {user.lastName}
                 </option>
               ))}
             </select>
@@ -241,7 +265,7 @@ export default function CRUDPage() {
               </option>
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
-                  {user.name} {user.lastname}
+                  {user.firstName} {user.lastName}
                 </option>
               ))}
             </select>
@@ -267,8 +291,8 @@ export default function CRUDPage() {
             {users.map((user) => (
               <tr key={user.id}>
                 <td>{user.id}</td>
-                <td>{user.name}</td>
-                <td>{user.lastname}</td>
+                <td>{user.firstName}</td>
+                <td>{user.lastName}</td>
                 <td>{user.email}</td>
                 <td>{user.telephone}</td>
               </tr>

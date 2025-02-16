@@ -1,13 +1,13 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react';
-import axios from 'axios';
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 // Define the User type
 type User = {
   id: number;
-  name: string;
-  lastname: string;
+  firstName: string;
+  lastName: string;
   email: string;
   telephone: string;
 };
@@ -15,24 +15,26 @@ type User = {
 export default function CRUDPage() {
   // State for managing users
   const [users, setUsers] = useState<User[]>([]);
-  const [name, setName] = useState<string>('');
-  const [lastname, setLastname] = useState<string>('');
-  const [email, setEmail] = useState<string>('');
-  const [telephone, setTelephone] = useState<string>('');
+  const [name, setName] = useState<string>("");
+  const [lastname, setLastname] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [telephone, setTelephone] = useState<string>("");
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const [activeOperation, setActiveOperation] = useState<'create' | 'update' | 'delete' | null>(null);
+  const [activeOperation, setActiveOperation] = useState<
+    "create" | "update" | "delete" | null
+  >(null);
 
   // Fetch users from the backend on component mount
   useEffect(() => {
     const fetchUsers = async () => {
       try {
-        const token = localStorage.getItem('token'); // or sessionStorage, or from state
+        const token = localStorage.getItem("token");
 
         if (!token) {
-          throw new Error('No access token found. Please log in again.');
+          throw new Error("No access token found. Please log in again.");
         }
 
-        const response = await axios.get('http://localhost:3005/users/me', {
+        const response = await axios.get("http://localhost:3005/users/me", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
@@ -41,13 +43,12 @@ export default function CRUDPage() {
         // Assuming the response data is an array of users
         setUsers(response.data);
       } catch (error) {
-        console.error('Error fetching users:', error);
-        // Handle the error (e.g., show a notification to the user)
+        console.error("Error fetching users:", error);
       }
     };
 
     fetchUsers();
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, []);
 
   // Create a new user
   const handleCreate = async (e: React.FormEvent) => {
@@ -55,25 +56,24 @@ export default function CRUDPage() {
 
     const newUser: User = {
       id: Date.now(), // Use a timestamp as a simple unique ID
-      name,
-      lastname,
+      firstName: name,
+      lastName: lastname,
       email,
       telephone,
     };
 
     try {
-      const token = localStorage.getItem('token'); // or sessionStorage, or from state
+      const token = localStorage.getItem("token");
 
       if (!token) {
-        throw new Error('No access token found. Please log in again.');
+        throw new Error("No access token found. Please log in again.");
       }
 
-      // Send the request to the backend
       const response = await axios.post(
-        'http://localhost:3005/users/me',
+        "http://localhost:3005/users/me",
         {
-          firstName: newUser.name,
-          lastName: newUser.lastname,
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
           telephone: newUser.telephone,
           email: newUser.email,
         },
@@ -84,15 +84,13 @@ export default function CRUDPage() {
         }
       );
 
-      // If the request is successful, update the local state
       setUsers([...users, newUser]);
       resetForm();
       setActiveOperation(null);
 
-      console.log('User created successfully:', response.data);
+      console.log("User created successfully:", response.data);
     } catch (error) {
-      console.error('Error creating user:', error);
-      // Handle the error (e.g., show a notification to the user)
+      console.error("Error creating user:", error);
     }
   };
 
@@ -102,7 +100,7 @@ export default function CRUDPage() {
     if (selectedUserId !== null) {
       const updatedUsers = users.map((user) =>
         user.id === selectedUserId
-          ? { ...user, name, lastname, email, telephone }
+          ? { ...user, firstName: name, lastName: lastname, email, telephone }
           : user
       );
       setUsers(updatedUsers);
@@ -115,30 +113,52 @@ export default function CRUDPage() {
   // Delete a user
   const handleDelete = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (selectedUserId !== null) {
-      const filteredUsers = users.filter((user) => user.id !== selectedUserId);
-      setUsers(filteredUsers);
-      resetForm();
-      setSelectedUserId(null);
-      setActiveOperation(null);
+      try {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          throw new Error("No access token found. Please log in again.");
+        }
+
+        const response = await axios.delete(
+          `http://localhost:3005/users/me/${selectedUserId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const filteredUsers = users.filter((user) => user.id !== selectedUserId);
+        setUsers(filteredUsers);
+        resetForm();
+        setSelectedUserId(null);
+        setActiveOperation(null);
+
+        console.log("User deleted successfully:", response.data);
+      } catch (error) {
+        console.error("Error deleting user:", error);
+      }
     }
   };
 
   // Set the selected user for update/delete
   const selectUser = (user: User) => {
     setSelectedUserId(user.id);
-    setName(user.name);
-    setLastname(user.lastname);
+    setName(user.firstName);
+    setLastname(user.lastName);
     setEmail(user.email);
     setTelephone(user.telephone);
   };
 
   // Reset the form fields
   const resetForm = () => {
-    setName('');
-    setLastname('');
-    setEmail('');
-    setTelephone('');
+    setName("");
+    setLastname("");
+    setEmail("");
+    setTelephone("");
   };
 
   return (
@@ -146,12 +166,12 @@ export default function CRUDPage() {
       <h1>User Management</h1>
 
       {/* Buttons for CRUD operations */}
-      <button onClick={() => setActiveOperation('create')}>Create User</button>
-      <button onClick={() => setActiveOperation('update')}>Update User</button>
-      <button onClick={() => setActiveOperation('delete')}>Delete User</button>
+      <button onClick={() => setActiveOperation("create")}>Create User</button>
+      <button onClick={() => setActiveOperation("update")}>Update User</button>
+      <button onClick={() => setActiveOperation("delete")}>Delete User</button>
 
       {/* Create User Form */}
-      {activeOperation === 'create' && (
+      {activeOperation === "create" && (
         <div>
           <h2>Create User</h2>
           <form onSubmit={handleCreate}>
@@ -189,12 +209,12 @@ export default function CRUDPage() {
       )}
 
       {/* Update User Form */}
-      {activeOperation === 'update' && (
+      {activeOperation === "update" && (
         <div>
           <h2>Update User</h2>
           <form onSubmit={handleUpdate}>
             <select
-              value={selectedUserId || ''}
+              value={selectedUserId || ""}
               onChange={(e) => {
                 const userId = parseInt(e.target.value, 10);
                 const user = users.find((u) => u.id === userId);
@@ -207,7 +227,7 @@ export default function CRUDPage() {
               </option>
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
-                  {user.name} {user.lastname}
+                  {user.firstName} {user.lastName}
                 </option>
               ))}
             </select>
@@ -245,12 +265,12 @@ export default function CRUDPage() {
       )}
 
       {/* Delete User Form */}
-      {activeOperation === 'delete' && (
+      {activeOperation === "delete" && (
         <div>
           <h2>Delete User</h2>
           <form onSubmit={handleDelete}>
             <select
-              value={selectedUserId || ''}
+              value={selectedUserId || ""}
               onChange={(e) => {
                 const userId = parseInt(e.target.value, 10);
                 const user = users.find((u) => u.id === userId);
@@ -263,7 +283,7 @@ export default function CRUDPage() {
               </option>
               {users.map((user) => (
                 <option key={user.id} value={user.id}>
-                  {user.name} {user.lastname}
+                  {user.firstName} {user.lastName}
                 </option>
               ))}
             </select>
@@ -289,8 +309,8 @@ export default function CRUDPage() {
             {users.map((user) => (
               <tr key={user.id}>
                 <td>{user.id}</td>
-                <td>{user.name}</td>
-                <td>{user.lastname}</td>
+                <td>{user.firstName}</td>
+                <td>{user.lastName}</td>
                 <td>{user.email}</td>
                 <td>{user.telephone}</td>
               </tr>
