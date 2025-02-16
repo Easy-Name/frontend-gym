@@ -97,16 +97,47 @@ export default function CRUDPage() {
   // Update an existing user
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
+
     if (selectedUserId !== null) {
-      const updatedUsers = users.map((user) =>
-        user.id === selectedUserId
-          ? { ...user, firstName: name, lastName: lastname, email, telephone }
-          : user
-      );
-      setUsers(updatedUsers);
-      resetForm();
-      setSelectedUserId(null);
-      setActiveOperation(null);
+      try {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          throw new Error("No access token found. Please log in again.");
+        }
+
+        // Prepare the updated user data
+        const updatedUser = {
+          firstName: name,
+          lastName: lastname,
+          telephone,
+          email,
+        };
+
+        // Send the PATCH request to the backend
+        const response = await axios.patch(
+          `http://localhost:3005/users/me/${selectedUserId}`,
+          updatedUser,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        // If the request is successful, update the local state
+        const updatedUsers = users.map((user) =>
+          user.id === selectedUserId ? { ...user, ...updatedUser } : user
+        );
+        setUsers(updatedUsers);
+        resetForm();
+        setSelectedUserId(null);
+        setActiveOperation(null);
+
+        console.log("User updated successfully:", response.data);
+      } catch (error) {
+        console.error("Error updating user:", error);
+      }
     }
   };
 
@@ -131,7 +162,9 @@ export default function CRUDPage() {
           }
         );
 
-        const filteredUsers = users.filter((user) => user.id !== selectedUserId);
+        const filteredUsers = users.filter(
+          (user) => user.id !== selectedUserId
+        );
         setUsers(filteredUsers);
         resetForm();
         setSelectedUserId(null);
