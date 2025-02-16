@@ -24,6 +24,7 @@ import {
   FormLabel,
   FormMessage,
 } from "@/components/ui/form";
+import { useRouter } from "next/navigation";
 
 // Schema for login form
 const loginSchema = z.object({
@@ -46,6 +47,7 @@ type FormValues = z.infer<typeof loginSchema> | z.infer<typeof registerSchema>;
 export default function AuthForm() {
   const [isRegistering, setIsRegistering] = useState(false); // Toggle between login and register
   const [error, setError] = useState<string | null>(null); // State for error message
+  const router = useRouter();
 
   // Use the appropriate schema based on the form type
   const form = useForm<FormValues>({
@@ -102,6 +104,7 @@ export default function AuthForm() {
           accessToken,
           refreshToken,
         });
+        router.push("/manage-users");
       }
     } catch (error) {
       console.error("Error:", error);
