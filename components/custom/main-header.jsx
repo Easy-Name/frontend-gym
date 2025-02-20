@@ -1,5 +1,5 @@
 import NavLink from "./nav-link";
-import { Dumbbell, Users, ClipboardList } from "lucide-react";
+import { Dumbbell, Users, ClipboardList, Settings } from "lucide-react";
 
 export default function MainNavHeader() {
     return (
@@ -44,11 +44,16 @@ export default function MainNavHeader() {
 
                 {/* Right-aligned User Section */}
                 <div className="flex items-center space-x-4">
-                    <button className="flex items-center space-x-2 rounded-lg px-4 py-2 text-sm transition-colors hover:bg-primary/10">
-            <span className="bg-gradient-to-r from-primary to-amber-600 bg-clip-text font-medium text-transparent">
+                    <NavLink
+                        href="/admin"
+                        className="group relative flex items-center space-x-2 rounded-lg px-4 py-2 text-sm transition-colors hover:bg-primary/10"
+                        activeClassName="bg-primary/10 text-primary font-semibold"
+                    >
+                        <Settings className="h-5 w-5 text-current" />
+                        <span className="bg-gradient-to-r from-primary to-amber-600 bg-clip-text font-medium text-transparent">
               Admin
             </span>
-                    </button>
+                    </NavLink>
                 </div>
             </nav>
         </header>

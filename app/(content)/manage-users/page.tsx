@@ -15,6 +15,8 @@ type FormData = Omit<User, "id">;
 
 export default function CRUDPage() {
   const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [formData, setFormData] = useState<FormData>({
     firstName: "",
     lastName: "",
@@ -22,13 +24,9 @@ export default function CRUDPage() {
     telephone: "",
   });
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const [activeOperation, setActiveOperation] = useState<
-      "create" | "update" | "delete" | null
-  >(null);
+  const [activeOperation, setActiveOperation] = useState<"create" | "update" | "delete" | null>(null);
   const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(
-      null
-  );
+  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
   // Estilos
   const styles = {
@@ -81,6 +79,7 @@ export default function CRUDPage() {
         });
 
         setUsers(response.data);
+        setFilteredUsers(response.data);
       } catch (error) {
         handleError(error, "Falha ao carregar usuários");
       }
@@ -88,6 +87,27 @@ export default function CRUDPage() {
 
     fetchUsers();
   }, []);
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    const filtered = users.filter(user =>
+        Object.values(user).some(value =>
+            value.toString().toLowerCase().includes(term.toLowerCase())
+        )
+    );
+    setFilteredUsers(filtered);
+  };
+
+  const handleUserClick = (user: User, operation: "update" | "delete") => {
+    setSelectedUserId(user.id);
+    setFormData({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      telephone: user.telephone,
+    });
+    setActiveOperation(operation);
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -101,13 +121,15 @@ export default function CRUDPage() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Token de acesso não encontrado");
 
-      await axios.post(
+      const response = await axios.post(
           "http://localhost:3005/users/me",
           { ...formData },
           { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setUsers([...users, { ...formData, id: Date.now() }]);
+      const newUser = { ...formData, id: Date.now() };
+      setUsers([...users, newUser]);
+      setFilteredUsers([...filteredUsers, newUser]);
       resetForm();
       setMessage({ type: "success", text: "Usuário criado com sucesso" });
     } catch (error) {
@@ -136,6 +158,7 @@ export default function CRUDPage() {
           user.id === selectedUserId ? { ...user, ...formData } : user
       );
       setUsers(updatedUsers);
+      setFilteredUsers(updatedUsers);
       resetForm();
       setMessage({ type: "success", text: "Usuário atualizado com sucesso" });
     } catch (error) {
@@ -145,8 +168,7 @@ export default function CRUDPage() {
     }
   };
 
-  const handleDelete = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleDelete = async () => {
     if (!selectedUserId) return;
     setLoading(true);
 
@@ -158,7 +180,9 @@ export default function CRUDPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      setUsers(users.filter((user) => user.id !== selectedUserId));
+      const updatedUsers = users.filter((user) => user.id !== selectedUserId);
+      setUsers(updatedUsers);
+      setFilteredUsers(updatedUsers);
       resetForm();
       setMessage({ type: "success", text: "Usuário excluído com sucesso" });
     } catch (error) {
@@ -168,16 +192,6 @@ export default function CRUDPage() {
     }
   };
 
-  const selectUser = (user: User) => {
-    setSelectedUserId(user.id);
-    setFormData({
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      telephone: user.telephone,
-    });
-  };
-
   const resetForm = () => {
     setFormData({ firstName: "", lastName: "", email: "", telephone: "" });
     setSelectedUserId(null);
@@ -185,9 +199,18 @@ export default function CRUDPage() {
   };
 
   const handleError = (error: unknown, defaultMessage: string) => {
-    const message = error instanceof Error ? error.message : defaultMessage;
-    console.error(message);
-    setMessage({ type: "error", text: message });
+    let errorMessage = defaultMessage;
+
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (axios.isAxiosError(error)) {
+      errorMessage = error.response?.data?.message || defaultMessage;
+    }
+
+    console.error('[User Error]', errorMessage);
+    setMessage({ type: "error", text: errorMessage });
   };
 
   return (
@@ -195,12 +218,7 @@ export default function CRUDPage() {
         <h1 style={styles.header}>Gerenciamento de Usuários</h1>
 
         {message && (
-            <div
-                style={{
-                  ...styles.message,
-                  ...(message.type === "error" ? styles.error : {}),
-                }}
-            >
+            <div style={{ ...styles.message, ...(message.type === "error" && styles.error) }}>
               {message.text}
             </div>
         )}
@@ -212,18 +230,21 @@ export default function CRUDPage() {
           >
             Criar Usuário
           </button>
-          <button
-              style={{ ...styles.button, background: "#2196F3", color: "white" }}
-              onClick={() => setActiveOperation("update")}
-          >
-            Atualizar Usuário
-          </button>
-          <button
-              style={{ ...styles.button, background: "#f44336", color: "white" }}
-              onClick={() => setActiveOperation("delete")}
-          >
-            Excluir Usuário
-          </button>
+        </div>
+
+        <div style={{ marginBottom: "20px" }}>
+          <input
+              type="text"
+              placeholder="Buscar usuários..."
+              style={{
+                ...styles.input,
+                width: "100%",
+                padding: "12px",
+                borderRadius: "25px"
+              }}
+              value={searchTerm}
+              onChange={(e) => handleSearch(e.target.value)}
+          />
         </div>
 
         {(activeOperation === "create" || activeOperation === "update") && (
@@ -233,28 +254,6 @@ export default function CRUDPage() {
               </h2>
               <form onSubmit={activeOperation === "create" ? handleCreate : handleUpdate}>
                 <div style={styles.inputGroup}>
-                  {activeOperation === "update" && (
-                      <select
-                          style={styles.input}
-                          value={selectedUserId || ""}
-                          onChange={(e) => {
-                            const userId = parseInt(e.target.value, 10);
-                            const user = users.find((u) => u.id === userId);
-                            if (user) selectUser(user);
-                          }}
-                          required
-                      >
-                        <option value="" disabled>
-                          Selecione um usuário
-                        </option>
-                        {users.map((user) => (
-                            <option key={user.id} value={user.id}>
-                              {user.firstName} {user.lastName}
-                            </option>
-                        ))}
-                      </select>
-                  )}
-
                   <input
                       style={styles.input}
                       name="firstName"
@@ -290,59 +289,35 @@ export default function CRUDPage() {
                       required
                   />
                 </div>
-                <button
-                    style={{
-                      ...styles.button,
-                      background: activeOperation === "create" ? "#4CAF50" : "#2196F3",
-                      color: "white",
-                      width: "100%",
-                    }}
-                    type="submit"
-                    disabled={loading}
-                >
-                  {loading ? "Processando..." : activeOperation === "create" ? "Criar" : "Atualizar"}
-                </button>
-              </form>
-            </div>
-        )}
-
-        {activeOperation === "delete" && (
-            <div style={styles.formContainer}>
-              <h2 style={styles.formTitle}>Excluir Usuário</h2>
-              <form onSubmit={handleDelete}>
-                <div style={styles.inputGroup}>
-                  <select
-                      style={styles.input}
-                      value={selectedUserId || ""}
-                      onChange={(e) => {
-                        const userId = parseInt(e.target.value, 10);
-                        const user = users.find((u) => u.id === userId);
-                        if (user) selectUser(user);
+                <div style={{ display: "flex", gap: "10px" }}>
+                  <button
+                      style={{
+                        ...styles.button,
+                        background: "#2196F3",
+                        color: "white",
+                        width: "100%",
                       }}
-                      required
+                      type="submit"
+                      disabled={loading}
                   >
-                    <option value="" disabled>
-                      Selecione um usuário
-                    </option>
-                    {users.map((user) => (
-                        <option key={user.id} value={user.id}>
-                          {user.firstName} {user.lastName}
-                        </option>
-                    ))}
-                  </select>
+                    {loading ? "Processando..." : "Salvar"}
+                  </button>
+                  {activeOperation === "update" && (
+                      <button
+                          style={{
+                            ...styles.button,
+                            background: "#f44336",
+                            color: "white",
+                            width: "100%",
+                          }}
+                          type="button"
+                          onClick={() => handleDelete()}
+                          disabled={loading}
+                      >
+                        {loading ? "Excluindo..." : "Excluir"}
+                      </button>
+                  )}
                 </div>
-                <button
-                    style={{
-                      ...styles.button,
-                      background: "#f44336",
-                      color: "white",
-                      width: "100%",
-                    }}
-                    type="submit"
-                    disabled={loading}
-                >
-                  {loading ? "Excluindo..." : "Confirmar Exclusão"}
-                </button>
               </form>
             </div>
         )}
@@ -359,8 +334,20 @@ export default function CRUDPage() {
             </tr>
             </thead>
             <tbody>
-            {users.map((user) => (
-                <tr key={user.id}>
+            {filteredUsers.map((user) => (
+                <tr
+                    key={user.id}
+                    style={{
+                      cursor: "pointer",
+                      transition: "background 0.3s",
+                      backgroundColor: selectedUserId === user.id ? "#f0f0f0" : "transparent"
+                    }}
+                    onClick={() => handleUserClick(user, "update")}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      handleUserClick(user, "delete");
+                    }}
+                >
                   <td style={styles.tableCell}>{user.firstName}</td>
                   <td style={styles.tableCell}>{user.lastName}</td>
                   <td style={styles.tableCell}>{user.email}</td>
