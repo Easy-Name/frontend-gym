@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 
+// Define the User type
 type User = {
   id: number;
   firstName: string;
@@ -11,352 +12,345 @@ type User = {
   telephone: string;
 };
 
-type FormData = Omit<User, "id">;
-
 export default function CRUDPage() {
+  // State for managing users
   const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [formData, setFormData] = useState<FormData>({
-    firstName: "",
-    lastName: "",
-    email: "",
-    telephone: "",
-  });
+  const [name, setName] = useState<string>("");
+  const [lastname, setLastname] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [telephone, setTelephone] = useState<string>("");
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
-  const [activeOperation, setActiveOperation] = useState<"create" | "update" | "delete" | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [activeOperation, setActiveOperation] = useState<
+    "create" | "update" | "delete" | null
+  >(null);
 
-  // Estilos
-  const styles = {
-    container: { maxWidth: "1000px", margin: "0 auto", padding: "20px" },
-    header: { fontSize: "24px", fontWeight: "bold", marginBottom: "30px" },
-    buttonGroup: { marginBottom: "30px", display: "flex", gap: "10px" },
-    button: {
-      padding: "10px 20px",
-      borderRadius: "5px",
-      border: "none",
-      cursor: "pointer",
-      fontWeight: "bold",
-      transition: "all 0.3s",
-    },
-    formContainer: { marginBottom: "30px", background: "#f5f5f5", padding: "20px", borderRadius: "8px" },
-    formTitle: { marginBottom: "15px", fontSize: "20px" },
-    inputGroup: { marginBottom: "15px", display: "grid", gap: "10px" },
-    input: {
-      padding: "10px",
-      borderRadius: "5px",
-      border: "1px solid #ddd",
-      width: "100%",
-      boxSizing: "border-box" as const,
-    },
-    table: { width: "100%", borderCollapse: "collapse", marginTop: "20px" },
-    tableHeader: {
-      background: "#f5f5f5",
-      padding: "12px",
-      textAlign: "left" as const
-    },
-    tableCell: { padding: "12px", borderBottom: "1px solid #ddd" },
-    message: {
-      padding: "15px",
-      borderRadius: "5px",
-      marginBottom: "20px",
-      background: "#4CAF50",
-      color: "white",
-    },
-    error: { background: "#f44336" },
-  };
-
+  // Fetch users from the backend on component mount
   useEffect(() => {
     const fetchUsers = async () => {
       try {
         const token = localStorage.getItem("token");
-        if (!token) throw new Error("Token de acesso não encontrado");
+
+        if (!token) {
+          throw new Error("No access token found. Please log in again.");
+        }
 
         const response = await axios.get("http://localhost:3005/users/me", {
-          headers: { Authorization: `Bearer ${token}` },
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         });
 
+        // Assuming the response data is an array of users
         setUsers(response.data);
-        setFilteredUsers(response.data);
       } catch (error) {
-        handleError(error, "Falha ao carregar usuários");
+        console.error("Error fetching users:", error);
       }
     };
 
     fetchUsers();
   }, []);
 
-  const handleSearch = (term: string) => {
-    setSearchTerm(term);
-    const filtered = users.filter(user =>
-        Object.values(user).some(value =>
-            value.toString().toLowerCase().includes(term.toLowerCase())
-        )
-    );
-    setFilteredUsers(filtered);
-  };
-
-  const handleUserClick = (user: User, operation: "update" | "delete") => {
-    setSelectedUserId(user.id);
-    setFormData({
-      firstName: user.firstName,
-      lastName: user.lastName,
-      email: user.email,
-      telephone: user.telephone,
-    });
-    setActiveOperation(operation);
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
+  // Create a new user
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+
+    const newUser: User = {
+      id: Date.now(), // Use a timestamp as a simple unique ID
+      firstName: name,
+      lastName: lastname,
+      email,
+      telephone,
+    };
+
     try {
       const token = localStorage.getItem("token");
-      if (!token) throw new Error("Token de acesso não encontrado");
+
+      if (!token) {
+        throw new Error("No access token found. Please log in again.");
+      }
 
       const response = await axios.post(
-          "http://localhost:3005/users/me",
-          { ...formData },
-          { headers: { Authorization: `Bearer ${token}` } }
+        "http://localhost:3005/users/me",
+        {
+          firstName: newUser.firstName,
+          lastName: newUser.lastName,
+          telephone: newUser.telephone,
+          email: newUser.email,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
-      const newUser = { ...formData, id: Date.now() };
       setUsers([...users, newUser]);
-      setFilteredUsers([...filteredUsers, newUser]);
       resetForm();
-      setMessage({ type: "success", text: "Usuário criado com sucesso" });
+      setActiveOperation(null);
+
+      console.log("User created successfully:", response.data);
     } catch (error) {
-      handleError(error, "Falha ao criar usuário");
-    } finally {
-      setLoading(false);
+      console.error("Error creating user:", error);
     }
   };
 
+  // Update an existing user
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedUserId) return;
-    setLoading(true);
 
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("Token de acesso não encontrado");
+    if (selectedUserId !== null) {
+      try {
+        const token = localStorage.getItem("token");
 
-      await axios.patch(
+        if (!token) {
+          throw new Error("No access token found. Please log in again.");
+        }
+
+        // Prepare the updated user data
+        const updatedUser = {
+          firstName: name,
+          lastName: lastname,
+          telephone,
+          email,
+        };
+
+        // Send the PATCH request to the backend
+        const response = await axios.patch(
           `http://localhost:3005/users/me/${selectedUserId}`,
-          { ...formData },
-          { headers: { Authorization: `Bearer ${token}` } }
-      );
+          updatedUser,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
 
-      const updatedUsers = users.map((user) =>
-          user.id === selectedUserId ? { ...user, ...formData } : user
-      );
-      setUsers(updatedUsers);
-      setFilteredUsers(updatedUsers);
-      resetForm();
-      setMessage({ type: "success", text: "Usuário atualizado com sucesso" });
-    } catch (error) {
-      handleError(error, "Falha ao atualizar usuário");
-    } finally {
-      setLoading(false);
+        // If the request is successful, update the local state
+        const updatedUsers = users.map((user) =>
+          user.id === selectedUserId ? { ...user, ...updatedUser } : user
+        );
+        setUsers(updatedUsers);
+        resetForm();
+        setSelectedUserId(null);
+        setActiveOperation(null);
+
+        console.log("User updated successfully:", response.data);
+      } catch (error) {
+        console.error("Error updating user:", error);
+      }
     }
   };
 
-  const handleDelete = async () => {
-    if (!selectedUserId) return;
-    setLoading(true);
+  // Delete a user
+  const handleDelete = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("Token de acesso não encontrado");
+    if (selectedUserId !== null) {
+      try {
+        const token = localStorage.getItem("token");
 
-      await axios.delete(`http://localhost:3005/users/me/${selectedUserId}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+        if (!token) {
+          throw new Error("No access token found. Please log in again.");
+        }
 
-      const updatedUsers = users.filter((user) => user.id !== selectedUserId);
-      setUsers(updatedUsers);
-      setFilteredUsers(updatedUsers);
-      resetForm();
-      setMessage({ type: "success", text: "Usuário excluído com sucesso" });
-    } catch (error) {
-      handleError(error, "Falha ao excluir usuário");
-    } finally {
-      setLoading(false);
+        const response = await axios.delete(
+          `http://localhost:3005/users/me/${selectedUserId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const filteredUsers = users.filter(
+          (user) => user.id !== selectedUserId
+        );
+        setUsers(filteredUsers);
+        resetForm();
+        setSelectedUserId(null);
+        setActiveOperation(null);
+
+        console.log("User deleted successfully:", response.data);
+      } catch (error) {
+        console.error("Error deleting user:", error);
+      }
     }
   };
 
+  // Set the selected user for update/delete
+  const selectUser = (user: User) => {
+    setSelectedUserId(user.id);
+    setName(user.firstName);
+    setLastname(user.lastName);
+    setEmail(user.email);
+    setTelephone(user.telephone);
+  };
+
+  // Reset the form fields
   const resetForm = () => {
-    setFormData({ firstName: "", lastName: "", email: "", telephone: "" });
-    setSelectedUserId(null);
-    setActiveOperation(null);
-  };
-
-  const handleError = (error: unknown, defaultMessage: string) => {
-    let errorMessage = defaultMessage;
-
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    } else if (typeof error === 'string') {
-      errorMessage = error;
-    } else if (axios.isAxiosError(error)) {
-      errorMessage = error.response?.data?.message || defaultMessage;
-    }
-
-    console.error('[User Error]', errorMessage);
-    setMessage({ type: "error", text: errorMessage });
+    setName("");
+    setLastname("");
+    setEmail("");
+    setTelephone("");
   };
 
   return (
-      <div style={styles.container}>
-        <h1 style={styles.header}>Gerenciamento de Usuários</h1>
+    <div>
+      <h1>User Management</h1>
 
-        {message && (
-            <div style={{ ...styles.message, ...(message.type === "error" && styles.error) }}>
-              {message.text}
-            </div>
-        )}
+      {/* Buttons for CRUD operations */}
+      <button onClick={() => setActiveOperation("create")}>Create User</button>
+      <button onClick={() => setActiveOperation("update")}>Update User</button>
+      <button onClick={() => setActiveOperation("delete")}>Delete User</button>
 
-        <div style={styles.buttonGroup}>
-          <button
-              style={{ ...styles.button, background: "#4CAF50", color: "white" }}
-              onClick={() => setActiveOperation("create")}
-          >
-            Criar Usuário
-          </button>
-        </div>
-
-        <div style={{ marginBottom: "20px" }}>
-          <input
-              type="text"
-              placeholder="Buscar usuários..."
-              style={{
-                ...styles.input,
-                width: "100%",
-                padding: "12px",
-                borderRadius: "25px"
-              }}
-              value={searchTerm}
-              onChange={(e) => handleSearch(e.target.value)}
-          />
-        </div>
-
-        {(activeOperation === "create" || activeOperation === "update") && (
-            <div style={styles.formContainer}>
-              <h2 style={styles.formTitle}>
-                {activeOperation === "create" ? "Novo Usuário" : "Editar Usuário"}
-              </h2>
-              <form onSubmit={activeOperation === "create" ? handleCreate : handleUpdate}>
-                <div style={styles.inputGroup}>
-                  <input
-                      style={styles.input}
-                      name="firstName"
-                      placeholder="Nome"
-                      value={formData.firstName}
-                      onChange={handleInputChange}
-                      required
-                  />
-                  <input
-                      style={styles.input}
-                      name="lastName"
-                      placeholder="Sobrenome"
-                      value={formData.lastName}
-                      onChange={handleInputChange}
-                      required
-                  />
-                  <input
-                      style={styles.input}
-                      name="email"
-                      type="email"
-                      placeholder="E-mail"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                  />
-                  <input
-                      style={styles.input}
-                      name="telephone"
-                      type="tel"
-                      placeholder="Telefone"
-                      value={formData.telephone}
-                      onChange={handleInputChange}
-                      required
-                  />
-                </div>
-                <div style={{ display: "flex", gap: "10px" }}>
-                  <button
-                      style={{
-                        ...styles.button,
-                        background: "#2196F3",
-                        color: "white",
-                        width: "100%",
-                      }}
-                      type="submit"
-                      disabled={loading}
-                  >
-                    {loading ? "Processando..." : "Salvar"}
-                  </button>
-                  {activeOperation === "update" && (
-                      <button
-                          style={{
-                            ...styles.button,
-                            background: "#f44336",
-                            color: "white",
-                            width: "100%",
-                          }}
-                          type="button"
-                          onClick={() => handleDelete()}
-                          disabled={loading}
-                      >
-                        {loading ? "Excluindo..." : "Excluir"}
-                      </button>
-                  )}
-                </div>
-              </form>
-            </div>
-        )}
-
+      {/* Create User Form */}
+      {activeOperation === "create" && (
         <div>
-          <h2 style={{ marginBottom: "15px" }}>Lista de Usuários</h2>
-          <table style={styles.table}>
-            <thead>
-            <tr>
-              <th style={styles.tableHeader}>Nome</th>
-              <th style={styles.tableHeader}>Sobrenome</th>
-              <th style={styles.tableHeader}>E-mail</th>
-              <th style={styles.tableHeader}>Telefone</th>
-            </tr>
-            </thead>
-            <tbody>
-            {filteredUsers.map((user) => (
-                <tr
-                    key={user.id}
-                    style={{
-                      cursor: "pointer",
-                      transition: "background 0.3s",
-                      backgroundColor: selectedUserId === user.id ? "#f0f0f0" : "transparent"
-                    }}
-                    onClick={() => handleUserClick(user, "update")}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      handleUserClick(user, "delete");
-                    }}
-                >
-                  <td style={styles.tableCell}>{user.firstName}</td>
-                  <td style={styles.tableCell}>{user.lastName}</td>
-                  <td style={styles.tableCell}>{user.email}</td>
-                  <td style={styles.tableCell}>{user.telephone}</td>
-                </tr>
-            ))}
-            </tbody>
-          </table>
+          <h2>Create User</h2>
+          <form onSubmit={handleCreate}>
+            <input
+              type="text"
+              placeholder="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+            <input
+              type="text"
+              placeholder="Lastname"
+              value={lastname}
+              onChange={(e) => setLastname(e.target.value)}
+              required
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <input
+              type="tel"
+              placeholder="Telephone"
+              value={telephone}
+              onChange={(e) => setTelephone(e.target.value)}
+              required
+            />
+            <button type="submit">Create</button>
+          </form>
         </div>
+      )}
+
+      {/* Update User Form */}
+      {activeOperation === "update" && (
+        <div>
+          <h2>Update User</h2>
+          <form onSubmit={handleUpdate}>
+            <select
+              value={selectedUserId || ""}
+              onChange={(e) => {
+                const userId = parseInt(e.target.value, 10);
+                const user = users.find((u) => u.id === userId);
+                if (user) selectUser(user);
+              }}
+              required
+            >
+              <option value="" disabled>
+                Select a user
+              </option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.firstName} {user.lastName}
+                </option>
+              ))}
+            </select>
+            <input
+              type="text"
+              placeholder="Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+            <input
+              type="text"
+              placeholder="Lastname"
+              value={lastname}
+              onChange={(e) => setLastname(e.target.value)}
+              required
+            />
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+            <input
+              type="tel"
+              placeholder="Telephone"
+              value={telephone}
+              onChange={(e) => setTelephone(e.target.value)}
+              required
+            />
+            <button type="submit">Update</button>
+          </form>
+        </div>
+      )}
+
+      {/* Delete User Form */}
+      {activeOperation === "delete" && (
+        <div>
+          <h2>Delete User</h2>
+          <form onSubmit={handleDelete}>
+            <select
+              value={selectedUserId || ""}
+              onChange={(e) => {
+                const userId = parseInt(e.target.value, 10);
+                const user = users.find((u) => u.id === userId);
+                if (user) selectUser(user);
+              }}
+              required
+            >
+              <option value="" disabled>
+                Select a user
+              </option>
+              {users.map((user) => (
+                <option key={user.id} value={user.id}>
+                  {user.firstName} {user.lastName}
+                </option>
+              ))}
+            </select>
+            <button type="submit">Delete</button>
+          </form>
+        </div>
+      )}
+
+      {/* Display Users in a Table */}
+      <div>
+        <h2>User List</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Lastname</th>
+              <th>Email</th>
+              <th>Telephone</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((user) => (
+              <tr key={user.id}>
+                <td>{user.id}</td>
+                <td>{user.firstName}</td>
+                <td>{user.lastName}</td>
+                <td>{user.email}</td>
+                <td>{user.telephone}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
+    </div>
   );
 }
