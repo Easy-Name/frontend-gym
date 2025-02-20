@@ -30,7 +30,7 @@ export default function CRUDPage() {
       null
   );
 
-  // Style constants
+  // Estilos
   const styles = {
     container: { maxWidth: "1000px", margin: "0 auto", padding: "20px" },
     header: { fontSize: "24px", fontWeight: "bold", marginBottom: "30px" },
@@ -54,7 +54,11 @@ export default function CRUDPage() {
       boxSizing: "border-box" as const,
     },
     table: { width: "100%", borderCollapse: "collapse", marginTop: "20px" },
-    tableHeader: { background: "#f5f5f5", padding: "12px", textAlign: "left" },
+    tableHeader: {
+      background: "#f5f5f5",
+      padding: "12px",
+      textAlign: "left" as const
+    },
     tableCell: { padding: "12px", borderBottom: "1px solid #ddd" },
     message: {
       padding: "15px",
@@ -70,7 +74,7 @@ export default function CRUDPage() {
     const fetchUsers = async () => {
       try {
         const token = localStorage.getItem("token");
-        if (!token) throw new Error("No access token found");
+        if (!token) throw new Error("Token de acesso não encontrado");
 
         const response = await axios.get("http://localhost:3005/users/me", {
           headers: { Authorization: `Bearer ${token}` },
@@ -78,7 +82,7 @@ export default function CRUDPage() {
 
         setUsers(response.data);
       } catch (error) {
-        handleError(error, "Failed to fetch users");
+        handleError(error, "Falha ao carregar usuários");
       }
     };
 
@@ -95,17 +99,19 @@ export default function CRUDPage() {
     setLoading(true);
     try {
       const token = localStorage.getItem("token");
-      if (!token) throw new Error("No access token found");
+      if (!token) throw new Error("Token de acesso não encontrado");
+
       await axios.post(
           "http://localhost:3005/users/me",
-          {...formData},
-          {headers: {Authorization: `Bearer ${token}`}}
+          { ...formData },
+          { headers: { Authorization: `Bearer ${token}` } }
       );
+
       setUsers([...users, { ...formData, id: Date.now() }]);
       resetForm();
-      setMessage({ type: "success", text: "User created successfully" });
+      setMessage({ type: "success", text: "Usuário criado com sucesso" });
     } catch (error) {
-      handleError(error, "Failed to create user");
+      handleError(error, "Falha ao criar usuário");
     } finally {
       setLoading(false);
     }
@@ -118,20 +124,22 @@ export default function CRUDPage() {
 
     try {
       const token = localStorage.getItem("token");
-      if (!token) throw new Error("No access token found");
+      if (!token) throw new Error("Token de acesso não encontrado");
+
       await axios.patch(
           `http://localhost:3005/users/me/${selectedUserId}`,
-          {...formData},
-          {headers: {Authorization: `Bearer ${token}`}}
+          { ...formData },
+          { headers: { Authorization: `Bearer ${token}` } }
       );
+
       const updatedUsers = users.map((user) =>
           user.id === selectedUserId ? { ...user, ...formData } : user
       );
       setUsers(updatedUsers);
       resetForm();
-      setMessage({ type: "success", text: "User updated successfully" });
+      setMessage({ type: "success", text: "Usuário atualizado com sucesso" });
     } catch (error) {
-      handleError(error, "Failed to update user");
+      handleError(error, "Falha ao atualizar usuário");
     } finally {
       setLoading(false);
     }
@@ -144,7 +152,7 @@ export default function CRUDPage() {
 
     try {
       const token = localStorage.getItem("token");
-      if (!token) throw new Error("No access token found");
+      if (!token) throw new Error("Token de acesso não encontrado");
 
       await axios.delete(`http://localhost:3005/users/me/${selectedUserId}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -152,9 +160,9 @@ export default function CRUDPage() {
 
       setUsers(users.filter((user) => user.id !== selectedUserId));
       resetForm();
-      setMessage({ type: "success", text: "User deleted successfully" });
+      setMessage({ type: "success", text: "Usuário excluído com sucesso" });
     } catch (error) {
-      handleError(error, "Failed to delete user");
+      handleError(error, "Falha ao excluir usuário");
     } finally {
       setLoading(false);
     }
@@ -184,7 +192,7 @@ export default function CRUDPage() {
 
   return (
       <div style={styles.container}>
-        <h1 style={styles.header}>User Management</h1>
+        <h1 style={styles.header}>Gerenciamento de Usuários</h1>
 
         {message && (
             <div
@@ -202,26 +210,26 @@ export default function CRUDPage() {
               style={{ ...styles.button, background: "#4CAF50", color: "white" }}
               onClick={() => setActiveOperation("create")}
           >
-            Create User
+            Criar Usuário
           </button>
           <button
               style={{ ...styles.button, background: "#2196F3", color: "white" }}
               onClick={() => setActiveOperation("update")}
           >
-            Update User
+            Atualizar Usuário
           </button>
           <button
               style={{ ...styles.button, background: "#f44336", color: "white" }}
               onClick={() => setActiveOperation("delete")}
           >
-            Delete User
+            Excluir Usuário
           </button>
         </div>
 
         {(activeOperation === "create" || activeOperation === "update") && (
             <div style={styles.formContainer}>
               <h2 style={styles.formTitle}>
-                {activeOperation === "create" ? "Create New User" : "Update User"}
+                {activeOperation === "create" ? "Novo Usuário" : "Editar Usuário"}
               </h2>
               <form onSubmit={activeOperation === "create" ? handleCreate : handleUpdate}>
                 <div style={styles.inputGroup}>
@@ -237,7 +245,7 @@ export default function CRUDPage() {
                           required
                       >
                         <option value="" disabled>
-                          Select a user
+                          Selecione um usuário
                         </option>
                         {users.map((user) => (
                             <option key={user.id} value={user.id}>
@@ -250,7 +258,7 @@ export default function CRUDPage() {
                   <input
                       style={styles.input}
                       name="firstName"
-                      placeholder="First Name"
+                      placeholder="Nome"
                       value={formData.firstName}
                       onChange={handleInputChange}
                       required
@@ -258,7 +266,7 @@ export default function CRUDPage() {
                   <input
                       style={styles.input}
                       name="lastName"
-                      placeholder="Last Name"
+                      placeholder="Sobrenome"
                       value={formData.lastName}
                       onChange={handleInputChange}
                       required
@@ -267,7 +275,7 @@ export default function CRUDPage() {
                       style={styles.input}
                       name="email"
                       type="email"
-                      placeholder="Email"
+                      placeholder="E-mail"
                       value={formData.email}
                       onChange={handleInputChange}
                       required
@@ -276,7 +284,7 @@ export default function CRUDPage() {
                       style={styles.input}
                       name="telephone"
                       type="tel"
-                      placeholder="Telephone"
+                      placeholder="Telefone"
                       value={formData.telephone}
                       onChange={handleInputChange}
                       required
@@ -292,7 +300,7 @@ export default function CRUDPage() {
                     type="submit"
                     disabled={loading}
                 >
-                  {loading ? "Processing..." : activeOperation === "create" ? "Create" : "Update"}
+                  {loading ? "Processando..." : activeOperation === "create" ? "Criar" : "Atualizar"}
                 </button>
               </form>
             </div>
@@ -300,7 +308,7 @@ export default function CRUDPage() {
 
         {activeOperation === "delete" && (
             <div style={styles.formContainer}>
-              <h2 style={styles.formTitle}>Delete User</h2>
+              <h2 style={styles.formTitle}>Excluir Usuário</h2>
               <form onSubmit={handleDelete}>
                 <div style={styles.inputGroup}>
                   <select
@@ -314,7 +322,7 @@ export default function CRUDPage() {
                       required
                   >
                     <option value="" disabled>
-                      Select a user
+                      Selecione um usuário
                     </option>
                     {users.map((user) => (
                         <option key={user.id} value={user.id}>
@@ -333,21 +341,21 @@ export default function CRUDPage() {
                     type="submit"
                     disabled={loading}
                 >
-                  {loading ? "Deleting..." : "Confirm Delete"}
+                  {loading ? "Excluindo..." : "Confirmar Exclusão"}
                 </button>
               </form>
             </div>
         )}
 
         <div>
-          <h2 style={{ marginBottom: "15px" }}>User List</h2>
+          <h2 style={{ marginBottom: "15px" }}>Lista de Usuários</h2>
           <table style={styles.table}>
             <thead>
             <tr>
-              <th style={styles.tableHeader}>First Name</th>
-              <th style={styles.tableHeader}>Last Name</th>
-              <th style={styles.tableHeader}>Email</th>
-              <th style={styles.tableHeader}>Telephone</th>
+              <th style={styles.tableHeader}>Nome</th>
+              <th style={styles.tableHeader}>Sobrenome</th>
+              <th style={styles.tableHeader}>E-mail</th>
+              <th style={styles.tableHeader}>Telefone</th>
             </tr>
             </thead>
             <tbody>
