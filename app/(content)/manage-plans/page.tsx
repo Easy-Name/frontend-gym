@@ -53,6 +53,12 @@ export default function ManageWorkoutsPage() {
     Bíceps: ["Rosca Direta", "Rosca Scott", "Rosca Concentrada"],
     Tríceps: ["Tríceps Corda", "Francês", "Mergulho"],
   };
+  const handleExerciseRemove = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      exercises: prev.exercises.filter((_, i) => i !== index)
+    }));
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -133,6 +139,7 @@ export default function ManageWorkoutsPage() {
         muscleGroups={muscleGroups}
         exercisesByMuscle={exercisesByMuscle}
         onExerciseChange={handleExerciseChange}
+        onExerciseRemove={handleExerciseRemove}
       />
       <ActionButtons onAddExercise={addExercise} onSubmit={handleSubmit} loading={loading} />
     </div>
