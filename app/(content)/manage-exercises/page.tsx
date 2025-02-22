@@ -11,6 +11,19 @@ type Exercise = {
   exerciseVideoLink?: string;
 };
 
+const muscleGroups = [
+  "Peito",
+  "Costas",
+  "Pernas",
+  "Ombros",
+  "Bíceps",
+  "Tríceps",
+  "Abdômen",
+  "Glúteos",
+  "Cardio",
+  "Alongamento"
+];
+
 export default function ManageExercisesPage() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [filteredExercises, setFilteredExercises] = useState<Exercise[]>([]);
@@ -22,6 +35,7 @@ export default function ManageExercisesPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
 
   useEffect(() => {
     fetchExercises();
@@ -95,39 +109,91 @@ export default function ManageExercisesPage() {
       display: "flex",
       alignItems: "center",
       gap: "1rem",
+      color: "#1e293b",
+    },
+    sectionHeader: {
+      fontSize: "1.5rem",
+      fontWeight: 600,
+      margin: "2rem 0 1.5rem",
+      color: "#1e293b",
+      paddingBottom: "0.5rem",
+      borderBottom: "2px solid #e2e8f0",
     },
     table: {
       width: "100%",
       borderCollapse: "collapse",
       marginTop: "2rem",
       backgroundColor: "white",
+      boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+      borderRadius: "0.5rem",
+      overflow: "hidden",
     },
     tableHeader: {
       background: "#f8fafc",
       padding: "1rem",
       textAlign: "left" as const,
       fontWeight: 600,
+      color: "#64748b",
       borderBottom: "2px solid #e2e8f0",
     },
-    tableCell: { padding: "1rem", borderBottom: "1px solid #e2e8f0" },
-    input: {
-      padding: "0.5rem",
-      borderRadius: "0.25rem",
-      border: "1px solid #e2e8f0",
-      width: "100%",
-      fontSize: "0.875rem",
+    tableCell: {
+      padding: "1rem",
+      borderBottom: "1px solid #e2e8f0",
+      color: "#475569",
     },
-    searchContainer: { position: "relative" as const, marginBottom: "1.5rem" },
-    searchInput: {
-      padding: "0.75rem 2.5rem",
+    input: {
+      padding: "0.75rem",
       borderRadius: "0.5rem",
       border: "1px solid #e2e8f0",
       width: "100%",
+      fontSize: "0.875rem",
+      transition: "all 0.2s",
+      "&:focus": {
+        outline: "none",
+        borderColor: "#93c5fd",
+        boxShadow: "0 0 0 3px rgba(147, 197, 253, 0.5)",
+      },
+    },
+    select: {
+      padding: "0.75rem",
+      borderRadius: "0.5rem",
+      border: "1px solid #e2e8f0",
+      width: "100%",
+      fontSize: "0.875rem",
+      backgroundColor: "white",
+      appearance: "none" as const,
+      backgroundImage: "url(\"data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e\")",
+      backgroundRepeat: "no-repeat",
+      backgroundPosition: "right 0.75rem center",
+      backgroundSize: "1em",
+      transition: "all 0.2s",
+      "&:focus": {
+        outline: "none",
+        borderColor: "#93c5fd",
+        boxShadow: "0 0 0 3px rgba(147, 197, 253, 0.5)",
+      },
+    },
+    searchContainer: {
+      position: "relative" as const,
+      marginBottom: "1.5rem",
+      backgroundColor: "white",
+      borderRadius: "0.75rem",
+      boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+    },
+    searchInput: {
+      padding: "0.875rem 3rem",
+      borderRadius: "0.75rem",
+      border: "none",
+      width: "100%",
       fontSize: "1rem",
+      "&:focus": {
+        outline: "none",
+        boxShadow: "0 0 0 3px rgba(147, 197, 253, 0.5)",
+      },
     },
     searchIcon: {
       position: "absolute" as const,
-      left: "1rem",
+      left: "1.25rem",
       top: "50%",
       transform: "translateY(-50%)",
       color: "#64748b",
@@ -143,14 +209,42 @@ export default function ManageExercisesPage() {
       zIndex: 10,
     },
     dropdownItem: {
-      padding: "0.75rem 1rem",
+      padding: "0.75rem 1.5rem",
       cursor: "pointer",
       "&:hover": { backgroundColor: "#f8fafc" },
     },
     videoLink: {
       color: "#3b82f6",
       textDecoration: "none",
+      fontWeight: 500,
       "&:hover": { textDecoration: "underline" },
+    },
+    formContainer: {
+      backgroundColor: "white",
+      borderRadius: "0.75rem",
+      padding: "2rem",
+      boxShadow: "0 1px 3px rgba(0, 0, 0, 0.1)",
+      marginBottom: "2rem",
+    },
+    submitButton: {
+      padding: "0.875rem 1.75rem",
+      borderRadius: "0.75rem",
+      backgroundColor: "#3b82f6",
+      color: "white",
+      fontWeight: 600,
+      border: "none",
+      cursor: "pointer",
+      opacity: 1,
+      transition: "all 0.2s",
+      marginTop: "1.5rem",
+      "&:hover": {
+        backgroundColor: "#2563eb",
+        transform: "translateY(-1px)",
+      },
+      "&:disabled": {
+        opacity: 0.7,
+        cursor: "not-allowed",
+      },
     },
   };
 
@@ -165,11 +259,11 @@ export default function ManageExercisesPage() {
         <div
           style={{
             padding: "1rem",
-            marginBottom: "1rem",
-            borderRadius: "0.375rem",
-            backgroundColor:
-              message.type === "success" ? "#dcfce7" : "#fee2e2",
+            marginBottom: "1.5rem",
+            borderRadius: "0.75rem",
+            backgroundColor: message.type === "success" ? "#dcfce7" : "#fee2e2",
             color: message.type === "success" ? "#166534" : "#991b1b",
+            fontWeight: 500,
           }}
         >
           {message.text}
@@ -183,9 +277,13 @@ export default function ManageExercisesPage() {
           placeholder="Buscar exercícios..."
           style={styles.searchInput}
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => {
+            setSearchTerm(e.target.value);
+            setIsDropdownOpen(true);
+          }}
+          onBlur={() => setTimeout(() => setIsDropdownOpen(false), 100)}
         />
-        {searchTerm && (
+        {isDropdownOpen && searchTerm && (
           <div style={styles.dropdown}>
             {filteredExercises.slice(0, 5).map((exercise) => (
               <div
@@ -193,6 +291,8 @@ export default function ManageExercisesPage() {
                 style={styles.dropdownItem}
                 onClick={() => {
                   setSearchTerm(exercise.exerciseName);
+                  setFilteredExercises([exercise]);
+                  setIsDropdownOpen(false);
                 }}
               >
                 {exercise.exerciseName} ({exercise.targetBodyPart})
@@ -202,76 +302,70 @@ export default function ManageExercisesPage() {
         )}
       </div>
 
+      <h2 style={styles.sectionHeader}>Adicionar Novo Exercício</h2>
+
       <form
         onSubmit={handleSubmit}
-        style={{
-          display: "grid",
-          gap: "1rem",
-          gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-          marginBottom: "2rem",
-        }}
+        style={styles.formContainer}
       >
-        <div>
-          <label
-            style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}
-          >
-            Nome do Exercício
-          </label>
-          <input
-            style={styles.input}
-            value={formData.exerciseName}
-            onChange={(e) =>
-              setFormData({ ...formData, exerciseName: e.target.value })
-            }
-            required
-          />
-        </div>
+        <div style={{
+          display: "grid",
+          gap: "1.5rem",
+          gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+          marginBottom: "0.5rem"
+        }}>
+          <div>
+            <label style={{ display: "block", marginBottom: "0.75rem", fontWeight: 500, color: "#374151" }}>
+              Nome do Exercício
+            </label>
+            <input
+              style={styles.input}
+              value={formData.exerciseName}
+              onChange={(e) =>
+                setFormData({ ...formData, exerciseName: e.target.value })
+              }
+              required
+            />
+          </div>
 
-        <div>
-          <label
-            style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}
-          >
-            Grupo Muscular
-          </label>
-          <input
-            style={styles.input}
-            value={formData.targetBodyPart}
-            onChange={(e) =>
-              setFormData({ ...formData, targetBodyPart: e.target.value })
-            }
-            required
-          />
-        </div>
+          <div>
+            <label style={{ display: "block", marginBottom: "0.75rem", fontWeight: 500, color: "#374151" }}>
+              Grupo Muscular
+            </label>
+            <select
+              style={styles.select}
+              value={formData.targetBodyPart}
+              onChange={(e) =>
+                setFormData({ ...formData, targetBodyPart: e.target.value })
+              }
+              required
+            >
+              <option value="" disabled>Selecione um grupo muscular</option>
+              {muscleGroups.map(group => (
+                <option key={group} value={group}>{group}</option>
+              ))}
+            </select>
+          </div>
 
-        <div>
-          <label
-            style={{ display: "block", marginBottom: "0.5rem", fontWeight: 500 }}
-          >
-            Video de Execução (Opcional)
-          </label>
-          <input
-            style={styles.input}
-            value={formData.exerciseVideoLink}
-            onChange={(e) =>
-              setFormData({ ...formData, exerciseVideoLink: e.target.value })
-            }
-            placeholder="Cole o link do YouTube/Vimeo"
-            type="url"
-          />
+          <div>
+            <label style={{ display: "block", marginBottom: "0.75rem", fontWeight: 500, color: "#374151" }}>
+              Video de Execução (Opcional)
+            </label>
+            <input
+              style={styles.input}
+              value={formData.exerciseVideoLink}
+              onChange={(e) =>
+                setFormData({ ...formData, exerciseVideoLink: e.target.value })
+              }
+              placeholder="Cole o link do YouTube/Vimeo"
+              type="url"
+            />
+          </div>
         </div>
 
         <button
           type="submit"
-          style={{
-            padding: "0.75rem 1.5rem",
-            borderRadius: "0.5rem",
-            backgroundColor: "#3b82f6",
-            color: "white",
-            fontWeight: 600,
-            border: "none",
-            cursor: "pointer",
-            opacity: loading ? 0.7 : 1,
-          }}
+          style={styles.submitButton}
           disabled={loading}
         >
           {loading ? "Salvando..." : "Adicionar Exercício"}
@@ -288,7 +382,7 @@ export default function ManageExercisesPage() {
         </thead>
         <tbody>
           {filteredExercises.map((exercise) => (
-            <tr key={exercise.id}>
+            <tr key={exercise.id} style={{ "&:hover": { backgroundColor: "#f8fafc" } }}>
               <td style={styles.tableCell}>{exercise.exerciseName}</td>
               <td style={styles.tableCell}>{exercise.targetBodyPart}</td>
               <td style={styles.tableCell}>
