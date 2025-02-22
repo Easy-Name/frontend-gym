@@ -1,7 +1,9 @@
 "use client";
-import { useState, useEffect, useRef } from "react";
+
+import { useState, useEffect } from "react";
 import axios from "axios";
-import { Dumbbell, Search, Calendar, Plus, Save, MessageCircle } from "lucide-react";
+import { Dumbbell, Plus, Save, MessageCircle } from "lucide-react";
+import SearchUser from "@/components/custom/SearchUser";
 
 type Exercise = {
   day: string;
@@ -32,18 +34,13 @@ type FormData = Omit<WorkoutPlan, "id">;
 export default function ManageWorkoutsPage() {
   const [plans, setPlans] = useState<WorkoutPlan[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [formData, setFormData] = useState<FormData>({
     name: "",
     student: "",
     exercises: [],
   });
-  const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [isSearchFocused, setIsSearchFocused] = useState(false);
-
-  const dropdownRef = useRef<HTMLDivElement>(null); // Ref for the dropdown
 
   const muscleGroups = ["Peito", "Costas", "Pernas", "Ombro", "Bíceps", "Tríceps"];
   const exercisesByMuscle = {
@@ -55,98 +52,15 @@ export default function ManageWorkoutsPage() {
     Tríceps: ["Tríceps Corda", "Francês", "Mergulho"],
   };
 
-  const styles = {
-    container: { maxWidth: "1200px", margin: "0 auto", padding: "2rem" },
-    header: { fontSize: "2rem", fontWeight: 700, marginBottom: "2rem", display: "flex", alignItems: "center", gap: "1rem" },
-    searchContainer: {
-      position: "relative",
-      marginBottom: "2rem",
-      width: "100%",
-      zIndex: 50,
-    },
-    searchInput: {
-      padding: "0.75rem 2.5rem 0.75rem 1rem",
-      borderRadius: "0.5rem",
-      border: "1px solid #e2e8f0",
-      width: "100%",
-      fontSize: "1rem",
-      backgroundColor: "white",
-    },
-    searchIcon: {
-      position: "absolute",
-      right: "1rem",
-      top: "50%",
-      transform: "translateY(-50%)",
-      color: "#64748b",
-    },
-    dropdownContainer: {
-      position: "absolute",
-      top: "calc(100% + 4px)",
-      left: 0,
-      right: 0,
-      maxHeight: "200px",
-      overflowY: "auto",
-      background: "white",
-      border: "1px solid #e2e8f0",
-      borderRadius: "0.5rem",
-      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-      zIndex: 51,
-    },
-    dropdownItem: {
-      padding: "0.75rem 1rem",
-      cursor: "pointer",
-      transition: "background-color 0.2s",
-      backgroundColor: "white",
-      "&:hover": {
-        backgroundColor: "#f8fafc",
-      },
-    },
-    table: { width: "100%", borderCollapse: "collapse", marginTop: "2rem", backgroundColor: "white" },
-    tableHeader: {
-      background: "#f8fafc",
-      padding: "1rem",
-      textAlign: "left" as const,
-      fontWeight: 600,
-      borderBottom: "2px solid #e2e8f0",
-    },
-    tableCell: {
-      padding: "1rem",
-      borderBottom: "1px solid #e2e8f0",
-      "&:last-child": { width: "250px" },
-    },
-    input: {
-      padding: "0.5rem",
-      borderRadius: "0.25rem",
-      border: "1px solid #e2e8f0",
-      width: "100%",
-      fontSize: "0.875rem",
-    },
-    button: {
-      padding: "0.5rem 1rem",
-      borderRadius: "0.375rem",
-      border: "none",
-      cursor: "pointer",
-      fontWeight: 600,
-      transition: "all 0.2s",
-      display: "flex",
-      alignItems: "center",
-      gap: "0.5rem",
-    },
-    actionButtons: { display: "flex", gap: "1rem", marginTop: "2rem" },
-  };
-
   useEffect(() => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("Token de acesso não encontrado");
-
         const usersRes = await axios.get("http://localhost:3005/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
-
         setUsers(usersRes.data);
-        setFilteredUsers([]);
       } catch (error) {
         handleError(error, "Failed to load data");
       }
@@ -154,30 +68,11 @@ export default function ManageWorkoutsPage() {
     fetchData();
   }, []);
 
-  const handleSearch = (term: string) => {
-    setSearchTerm(term);
-    if (term.trim() === "") {
-      // Show all users when input is focused, otherwise clear
-      setFilteredUsers(isSearchFocused ? users : []);
-      return;
-    }
-
-    const filtered = users.filter(
-      (user) =>
-        `${user.firstName} ${user.lastName}`.toLowerCase().includes(term.toLowerCase()) ||
-        user.email.toLowerCase().includes(term.toLowerCase()) ||
-        user.telephone.toLowerCase().includes(term.toLowerCase())
-    );
-    setFilteredUsers(filtered);
-  };
-
   const handleUserSelect = (user: User) => {
     setFormData((prev) => ({
       ...prev,
       student: `${user.firstName} ${user.lastName}`,
     }));
-    setSearchTerm(`${user.firstName} ${user.lastName}`);
-    setFilteredUsers([]);
   };
 
   const handleError = (error: unknown, defaultMessage: string) => {
@@ -219,16 +114,15 @@ export default function ManageWorkoutsPage() {
     }
   };
 
-  const handleBlur = () => {
-    setTimeout(() => {
-      // Check if the dropdown or its children are still focused
-      if (!dropdownRef.current?.contains(document.activeElement)) {
-        setIsSearchFocused(false);
-        if (searchTerm === "") {
-          setFilteredUsers([]);
-        }
-      }
-    }, 200); // 200ms delay
+  const styles = {
+    container: { maxWidth: "1200px", margin: "0 auto", padding: "2rem" },
+    header: { fontSize: "2rem", fontWeight: 700, marginBottom: "2rem", display: "flex", alignItems: "center", gap: "1rem" },
+    table: { width: "100%", borderCollapse: "collapse", marginTop: "2rem", backgroundColor: "white" },
+    tableHeader: { background: "#f8fafc", padding: "1rem", textAlign: "left" as const, fontWeight: 600, borderBottom: "2px solid #e2e8f0" },
+    tableCell: { padding: "1rem", borderBottom: "1px solid #e2e8f0", "&:last-child": { width: "250px" } },
+    input: { padding: "0.5rem", borderRadius: "0.25rem", border: "1px solid #e2e8f0", width: "100%", fontSize: "0.875rem" },
+    button: { padding: "0.5rem 1rem", borderRadius: "0.375rem", border: "none", cursor: "pointer", fontWeight: 600, transition: "all 0.2s", display: "flex", alignItems: "center", gap: "0.5rem" },
+    actionButtons: { display: "flex", gap: "1rem", marginTop: "2rem" },
   };
 
   return (
@@ -237,47 +131,7 @@ export default function ManageWorkoutsPage() {
         <Dumbbell size={32} />
         <h1>Gerenciar Treinos</h1>
       </div>
-
-      <div style={styles.searchContainer}>
-        <input
-          style={styles.searchInput}
-          placeholder="Pesquisar aluno..."
-          value={searchTerm}
-          onChange={(e) => handleSearch(e.target.value)}
-          onFocus={() => {
-            setIsSearchFocused(true);
-            if (searchTerm === "") {
-              setFilteredUsers(users);
-            }
-          }}
-          onBlur={handleBlur} // Use the new handleBlur function
-          autoComplete="off"
-        />
-        <Search size={20} style={styles.searchIcon} />
-
-        {filteredUsers.length > 0 && (
-          <div
-            style={styles.dropdownContainer}
-            ref={dropdownRef} // Attach the ref to the dropdown
-          >
-            {filteredUsers.map((user) => (
-              <div
-                key={user.id}
-                style={{
-                  ...styles.dropdownItem,
-                  "&:hover": {
-                    backgroundColor: "#f8fafc",
-                  },
-                }}
-                onClick={() => handleUserSelect(user)}
-              >
-                {`${user.firstName} ${user.lastName} - ${user.email}`}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
+      <SearchUser users={users} onUserSelect={handleUserSelect} />
       <table style={styles.table}>
         <thead>
           <tr>
@@ -366,12 +220,8 @@ export default function ManageWorkoutsPage() {
           ))}
         </tbody>
       </table>
-
       <div style={styles.actionButtons}>
-        <button
-          style={{ ...styles.button, background: "#3b82f6", color: "white" }}
-          onClick={addExercise}
-        >
+        <button style={{ ...styles.button, background: "#3b82f6", color: "white" }} onClick={addExercise}>
           <Plus size={16} />
           Adicionar Exercício
         </button>
@@ -383,9 +233,7 @@ export default function ManageWorkoutsPage() {
           <Save size={16} />
           {loading ? "Salvando..." : "Salvar Treino"}
         </button>
-        <button
-          style={{ ...styles.button, background: "#8b5cf6", color: "white" }}
-        >
+        <button style={{ ...styles.button, background: "#8b5cf6", color: "white" }}>
           <MessageCircle size={16} />
           Enviar Mensagem
         </button>
