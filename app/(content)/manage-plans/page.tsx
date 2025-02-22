@@ -44,15 +44,6 @@ export default function ManageWorkoutsPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  const muscleGroups = ["Peito", "Costas", "Pernas", "Ombro", "Bíceps", "Tríceps"];
-  const exercisesByMuscle = {
-    Peito: ["Supino Reto", "Supino Inclinado", "Crucifixo"],
-    Costas: ["Puxada Alta", "Remada Curvada", "Pull-down"],
-    Pernas: ["Agachamento", "Leg Press", "Cadeira Extensora"],
-    Ombro: ["Desenvolvimento", "Elevação Lateral", "Remada Alta"],
-    Bíceps: ["Rosca Direta", "Rosca Scott", "Rosca Concentrada"],
-    Tríceps: ["Tríceps Corda", "Francês", "Mergulho"],
-  };
   const handleExerciseRemove = (index: number) => {
     setFormData(prev => ({
       ...prev,
@@ -136,8 +127,6 @@ export default function ManageWorkoutsPage() {
       <SearchUser users={users} onUserSelect={handleUserSelect} />
       <ExerciseTable
         exercises={formData.exercises}
-        muscleGroups={muscleGroups}
-        exercisesByMuscle={exercisesByMuscle}
         onExerciseChange={handleExerciseChange}
         onExerciseRemove={handleExerciseRemove}
       />
