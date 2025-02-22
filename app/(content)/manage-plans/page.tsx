@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { Dumbbell, Plus, Save, MessageCircle } from "lucide-react";
+import { Dumbbell } from "lucide-react";
 import SearchUser from "@/components/custom/SearchUser";
 import ExerciseTable from "@/components/custom/ExerciseTable";
+import ActionButtons from "@/components/custom/ActionButtons";
 
 type Exercise = {
   day: string;
@@ -118,8 +119,6 @@ export default function ManageWorkoutsPage() {
   const styles = {
     container: { maxWidth: "1200px", margin: "0 auto", padding: "2rem" },
     header: { fontSize: "2rem", fontWeight: 700, marginBottom: "2rem", display: "flex", alignItems: "center", gap: "1rem" },
-    actionButtons: { display: "flex", gap: "1rem", marginTop: "2rem" },
-    button: { padding: "0.5rem 1rem", borderRadius: "0.375rem", border: "none", cursor: "pointer", fontWeight: 600, transition: "all 0.2s", display: "flex", alignItems: "center", gap: "0.5rem" },
   };
 
   return (
@@ -135,24 +134,7 @@ export default function ManageWorkoutsPage() {
         exercisesByMuscle={exercisesByMuscle}
         onExerciseChange={handleExerciseChange}
       />
-      <div style={styles.actionButtons}>
-        <button style={{ ...styles.button, background: "#3b82f6", color: "white" }} onClick={addExercise}>
-          <Plus size={16} />
-          Adicionar Exercício
-        </button>
-        <button
-          style={{ ...styles.button, background: "#10b981", color: "white" }}
-          onClick={handleSubmit}
-          disabled={loading}
-        >
-          <Save size={16} />
-          {loading ? "Salvando..." : "Salvar Treino"}
-        </button>
-        <button style={{ ...styles.button, background: "#8b5cf6", color: "white" }}>
-          <MessageCircle size={16} />
-          Enviar Mensagem
-        </button>
-      </div>
+      <ActionButtons onAddExercise={addExercise} onSubmit={handleSubmit} loading={loading} />
     </div>
   );
 }
