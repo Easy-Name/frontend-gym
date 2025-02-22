@@ -1,5 +1,5 @@
 import NavLink from "./nav-link";
-import { Dumbbell, Users, ClipboardList, Settings } from "lucide-react";
+import { Dumbbell, Users, ClipboardList, Settings, Activity } from "lucide-react";
 
 export default function MainNavHeader() {
     return (
@@ -37,6 +37,16 @@ export default function MainNavHeader() {
                         >
                             <ClipboardList className="h-5 w-5 shrink-0 text-current" />
                             <span className="text-sm font-medium">Gerenciar Treinos</span>
+                            <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary opacity-0 transition-opacity group-hover:opacity-30 group-[&.active]:opacity-100" />
+                        </NavLink>
+
+                        <NavLink
+                            href="/manage-exercises"
+                            className="group relative flex items-center space-x-3 rounded-lg py-2.5 transition-all hover:bg-primary/10"
+                            activeClassName="bg-primary/10 text-primary font-semibold"
+                        >
+                            <Activity className="h-5 w-5 shrink-0 text-current" />
+                            <span className="text-sm font-medium">Gerenciar Exercícios</span>
                             <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary opacity-0 transition-opacity group-hover:opacity-30 group-[&.active]:opacity-100" />
                         </NavLink>
                     </div>
