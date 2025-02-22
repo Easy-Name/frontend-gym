@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useState } from "react";
+
 type Exercise = {
   day: string;
   muscle: string;
@@ -11,19 +13,50 @@ type Exercise = {
 
 interface ExerciseTableProps {
   exercises: Exercise[];
-  muscleGroups: string[];
-  exercisesByMuscle: Record<string, string[]>;
   onExerciseChange: (index: number, field: keyof Exercise, value: string | number) => void;
   onExerciseRemove: (index: number) => void;
 }
 
 export default function ExerciseTable({
   exercises,
-  muscleGroups,
-  exercisesByMuscle,
   onExerciseChange,
   onExerciseRemove,
 }: ExerciseTableProps) {
+  const [muscleGroups, setMuscleGroups] = useState<string[]>([]);
+  const [exercisesByMuscle, setExercisesByMuscle] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    const fetchExercises = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const response = await fetch("http://localhost:3005/exercise", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (!response.ok) throw new Error("Failed to fetch exercises");
+        const data = await response.json();
+
+        // Extract unique muscle groups
+        const muscles = Array.from(new Set(data.map((ex: any) => ex.targetBodyPart)));
+        setMuscleGroups(muscles);
+
+        // Group exercises by muscle
+        const grouped = data.reduce((acc: Record<string, string[]>, ex: any) => {
+          const muscle = ex.targetBodyPart;
+          if (!acc[muscle]) acc[muscle] = [];
+          acc[muscle].push(ex.exerciseName);
+          return acc;
+        }, {});
+        setExercisesByMuscle(grouped);
+      } catch (error) {
+        console.error("Fetch error:", error);
+      }
+    };
+
+    fetchExercises();
+  }, []);
+
   const styles = {
     table: { width: "100%", borderCollapse: "collapse", marginTop: "2rem", backgroundColor: "white" },
     tableHeader: { background: "#f8fafc", padding: "1rem", textAlign: "left" as const, fontWeight: 600, borderBottom: "2px solid #e2e8f0" },
