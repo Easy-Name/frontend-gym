@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 import { Dumbbell, Plus, Save, MessageCircle } from "lucide-react";
 import SearchUser from "@/components/custom/SearchUser";
+import ExerciseTable from "@/components/custom/ExerciseTable";
 
 type Exercise = {
   day: string;
@@ -117,12 +118,8 @@ export default function ManageWorkoutsPage() {
   const styles = {
     container: { maxWidth: "1200px", margin: "0 auto", padding: "2rem" },
     header: { fontSize: "2rem", fontWeight: 700, marginBottom: "2rem", display: "flex", alignItems: "center", gap: "1rem" },
-    table: { width: "100%", borderCollapse: "collapse", marginTop: "2rem", backgroundColor: "white" },
-    tableHeader: { background: "#f8fafc", padding: "1rem", textAlign: "left" as const, fontWeight: 600, borderBottom: "2px solid #e2e8f0" },
-    tableCell: { padding: "1rem", borderBottom: "1px solid #e2e8f0", "&:last-child": { width: "250px" } },
-    input: { padding: "0.5rem", borderRadius: "0.25rem", border: "1px solid #e2e8f0", width: "100%", fontSize: "0.875rem" },
-    button: { padding: "0.5rem 1rem", borderRadius: "0.375rem", border: "none", cursor: "pointer", fontWeight: 600, transition: "all 0.2s", display: "flex", alignItems: "center", gap: "0.5rem" },
     actionButtons: { display: "flex", gap: "1rem", marginTop: "2rem" },
+    button: { padding: "0.5rem 1rem", borderRadius: "0.375rem", border: "none", cursor: "pointer", fontWeight: 600, transition: "all 0.2s", display: "flex", alignItems: "center", gap: "0.5rem" },
   };
 
   return (
@@ -132,94 +129,12 @@ export default function ManageWorkoutsPage() {
         <h1>Gerenciar Treinos</h1>
       </div>
       <SearchUser users={users} onUserSelect={handleUserSelect} />
-      <table style={styles.table}>
-        <thead>
-          <tr>
-            <th style={styles.tableHeader}>Dia</th>
-            <th style={styles.tableHeader}>Músculo</th>
-            <th style={styles.tableHeader}>Exercício</th>
-            <th style={styles.tableHeader}>Séries</th>
-            <th style={styles.tableHeader}>Repetições</th>
-            <th style={styles.tableHeader}>Observações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {formData.exercises.map((exercise, index) => (
-            <tr key={index}>
-              <td style={styles.tableCell}>
-                <select
-                  style={styles.input}
-                  value={exercise.day}
-                  onChange={(e) => handleExerciseChange(index, "day", e.target.value)}
-                >
-                  <option value="">Selecione</option>
-                  {["A", "B", "C", "D", "E", "F"].map((day) => (
-                    <option key={day} value={day}>
-                      {day}
-                    </option>
-                  ))}
-                </select>
-              </td>
-              <td style={styles.tableCell}>
-                <select
-                  style={styles.input}
-                  value={exercise.muscle}
-                  onChange={(e) => handleExerciseChange(index, "muscle", e.target.value)}
-                >
-                  <option value="">Selecione</option>
-                  {muscleGroups.map((muscle) => (
-                    <option key={muscle} value={muscle}>
-                      {muscle}
-                    </option>
-                  ))}
-                </select>
-              </td>
-              <td style={styles.tableCell}>
-                <select
-                  style={styles.input}
-                  value={exercise.exercise}
-                  onChange={(e) => handleExerciseChange(index, "exercise", e.target.value)}
-                  disabled={!exercise.muscle}
-                >
-                  <option value="">Selecione</option>
-                  {exercisesByMuscle[exercise.muscle as keyof typeof exercisesByMuscle]?.map((ex) => (
-                    <option key={ex} value={ex}>
-                      {ex}
-                    </option>
-                  ))}
-                </select>
-              </td>
-              <td style={styles.tableCell}>
-                <input
-                  style={styles.input}
-                  type="number"
-                  min="1"
-                  value={exercise.sets}
-                  onChange={(e) => handleExerciseChange(index, "sets", parseInt(e.target.value))}
-                />
-              </td>
-              <td style={styles.tableCell}>
-                <input
-                  style={styles.input}
-                  type="number"
-                  min="1"
-                  value={exercise.reps}
-                  onChange={(e) => handleExerciseChange(index, "reps", parseInt(e.target.value))}
-                />
-              </td>
-              <td style={styles.tableCell}>
-                <input
-                  style={styles.input}
-                  type="text"
-                  value={exercise.observations || ""}
-                  onChange={(e) => handleExerciseChange(index, "observations", e.target.value)}
-                  placeholder="Opcional"
-                />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <ExerciseTable
+        exercises={formData.exercises}
+        muscleGroups={muscleGroups}
+        exercisesByMuscle={exercisesByMuscle}
+        onExerciseChange={handleExerciseChange}
+      />
       <div style={styles.actionButtons}>
         <button style={{ ...styles.button, background: "#3b82f6", color: "white" }} onClick={addExercise}>
           <Plus size={16} />
