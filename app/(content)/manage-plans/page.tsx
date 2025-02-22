@@ -41,6 +41,7 @@ export default function ManageWorkoutsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [isSearchFocused, setIsSearchFocused] = useState(false); // Track search input focus
 
   const muscleGroups = ["Peito", "Costas", "Pernas", "Ombro", "Bíceps", "Tríceps"];
   const exercisesByMuscle = {
@@ -59,7 +60,7 @@ export default function ManageWorkoutsPage() {
       position: "relative",
       marginBottom: "2rem",
       width: "100%",
-      zIndex: 50
+      zIndex: 50,
     },
     searchInput: {
       padding: "0.75rem 2.5rem 0.75rem 1rem",
@@ -74,7 +75,7 @@ export default function ManageWorkoutsPage() {
       right: "1rem",
       top: "50%",
       transform: "translateY(-50%)",
-      color: "#64748b"
+      color: "#64748b",
     },
     dropdownContainer: {
       position: "absolute",
@@ -109,7 +110,7 @@ export default function ManageWorkoutsPage() {
     tableCell: {
       padding: "1rem",
       borderBottom: "1px solid #e2e8f0",
-      "&:last-child": { width: "250px" }
+      "&:last-child": { width: "250px" },
     },
     input: {
       padding: "0.5rem",
@@ -153,23 +154,25 @@ export default function ManageWorkoutsPage() {
 
   const handleSearch = (term: string) => {
     setSearchTerm(term);
-    if (term.trim() === '') {
-      setFilteredUsers([]);
+    if (term.trim() === "") {
+      // Show all users when input is focused, otherwise clear
+      setFilteredUsers(isSearchFocused ? users : []);
       return;
     }
 
-    const filtered = users.filter(user =>
-      `${user.firstName} ${user.lastName}`.toLowerCase().includes(term.toLowerCase()) ||
-      user.email.toLowerCase().includes(term.toLowerCase()) ||
-      user.telephone.toLowerCase().includes(term.toLowerCase())
+    const filtered = users.filter(
+      (user) =>
+        `${user.firstName} ${user.lastName}`.toLowerCase().includes(term.toLowerCase()) ||
+        user.email.toLowerCase().includes(term.toLowerCase()) ||
+        user.telephone.toLowerCase().includes(term.toLowerCase())
     );
     setFilteredUsers(filtered);
   };
 
   const handleUserSelect = (user: User) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      student: `${user.firstName} ${user.lastName}`
+      student: `${user.firstName} ${user.lastName}`,
     }));
     setSearchTerm(`${user.firstName} ${user.lastName}`);
     setFilteredUsers([]);
@@ -179,26 +182,26 @@ export default function ManageWorkoutsPage() {
     let errorMessage = defaultMessage;
     if (error instanceof Error) {
       errorMessage = error.message;
-    } else if (typeof error === 'string') {
+    } else if (typeof error === "string") {
       errorMessage = error;
     } else if (axios.isAxiosError(error)) {
       errorMessage = error.response?.data?.message || defaultMessage;
     }
-    console.error('[Error]', errorMessage);
+    console.error("[Error]", errorMessage);
     setMessage({ type: "error", text: errorMessage });
   };
 
   const addExercise = () => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      exercises: [...prev.exercises, { day: "", muscle: "", exercise: "", sets: 0, reps: 0 }]
+      exercises: [...prev.exercises, { day: "", muscle: "", exercise: "", sets: 0, reps: 0 }],
     }));
   };
 
   const handleExerciseChange = (index: number, field: keyof Exercise, value: string | number) => {
     const newExercises = [...formData.exercises];
     newExercises[index][field] = value as never;
-    setFormData(prev => ({ ...prev, exercises: newExercises }));
+    setFormData((prev) => ({ ...prev, exercises: newExercises }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -227,20 +230,32 @@ export default function ManageWorkoutsPage() {
           placeholder="Pesquisar aluno..."
           value={searchTerm}
           onChange={(e) => handleSearch(e.target.value)}
+          onFocus={() => {
+            setIsSearchFocused(true);
+            if (searchTerm === "") {
+              setFilteredUsers(users);
+            }
+          }}
+          onBlur={() => {
+            setIsSearchFocused(false);
+            if (searchTerm === "") {
+              setFilteredUsers([]);
+            }
+          }}
           autoComplete="off"
         />
         <Search size={20} style={styles.searchIcon} />
 
-        {searchTerm.trim() !== '' && filteredUsers.length > 0 && (
+        {filteredUsers.length > 0 && (
           <div style={styles.dropdownContainer}>
             {filteredUsers.map((user) => (
               <div
                 key={user.id}
                 style={{
                   ...styles.dropdownItem,
-                  '&:hover': {
-                    backgroundColor: '#f8fafc',
-                  }
+                  "&:hover": {
+                    backgroundColor: "#f8fafc",
+                  },
                 }}
                 onClick={() => handleUserSelect(user)}
               >
@@ -272,8 +287,10 @@ export default function ManageWorkoutsPage() {
                   onChange={(e) => handleExerciseChange(index, "day", e.target.value)}
                 >
                   <option value="">Selecione</option>
-                  {["A", "B", "C", "D", "E", "F"].map(day => (
-                    <option key={day} value={day}>{day}</option>
+                  {["A", "B", "C", "D", "E", "F"].map((day) => (
+                    <option key={day} value={day}>
+                      {day}
+                    </option>
                   ))}
                 </select>
               </td>
@@ -284,8 +301,10 @@ export default function ManageWorkoutsPage() {
                   onChange={(e) => handleExerciseChange(index, "muscle", e.target.value)}
                 >
                   <option value="">Selecione</option>
-                  {muscleGroups.map(muscle => (
-                    <option key={muscle} value={muscle}>{muscle}</option>
+                  {muscleGroups.map((muscle) => (
+                    <option key={muscle} value={muscle}>
+                      {muscle}
+                    </option>
                   ))}
                 </select>
               </td>
@@ -297,8 +316,10 @@ export default function ManageWorkoutsPage() {
                   disabled={!exercise.muscle}
                 >
                   <option value="">Selecione</option>
-                  {exercisesByMuscle[exercise.muscle as keyof typeof exercisesByMuscle]?.map(ex => (
-                    <option key={ex} value={ex}>{ex}</option>
+                  {exercisesByMuscle[exercise.muscle as keyof typeof exercisesByMuscle]?.map((ex) => (
+                    <option key={ex} value={ex}>
+                      {ex}
+                    </option>
                   ))}
                 </select>
               </td>
