@@ -1,7 +1,32 @@
+"use client";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import NavLink from "./nav-link";
 import { Dumbbell, Users, ClipboardList, Settings, Activity } from "lucide-react";
 
 export default function MainNavHeader() {
+    const [userFirstName, setUserFirstName] = useState("");
+
+    useEffect(() => {
+        const fetchUserData = async () => {
+            try {
+                const token = localStorage.getItem("token"); // Assuming the token is stored in localStorage
+                const response = await axios.get("http://localhost:3005/professor/me", {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+                // Capitalize the first letter of the first name
+                const capitalizedFirstName = response.data.firstName.charAt(0).toUpperCase() + response.data.firstName.slice(1);
+                setUserFirstName(capitalizedFirstName);
+            } catch (error) {
+                console.error("Failed to fetch user data", error);
+            }
+        };
+
+        fetchUserData();
+    }, []);
+
     return (
         <header className="bg-gradient-to-b from-gray-50 to-white text-foreground shadow-sm">
             <nav className="container mx-auto flex h-20 items-center justify-between px-8">
@@ -11,11 +36,11 @@ export default function MainNavHeader() {
                     <div className="flex items-center space-x-3">
                         <Dumbbell className="h-7 w-7 text-primary" />
                         <span className="text-xl font-bold tracking-tight">
-              <span className="bg-gradient-to-r from-primary to-amber-600 bg-clip-text text-transparent">
-                Power
-              </span>
-              <span className="ml-1">Gym</span>
-            </span>
+                            <span className="bg-gradient-to-r from-primary to-amber-600 bg-clip-text text-transparent">
+                                Power
+                            </span>
+                            <span className="ml-1">Gym</span>
+                        </span>
                     </div>
 
                     {/* Navigation Tabs */}
@@ -60,9 +85,9 @@ export default function MainNavHeader() {
                         activeClassName="bg-primary/10 text-primary font-semibold"
                     >
                         <Settings className="h-5 w-5 text-current" />
-                        <span className="bg-gradient-to-r from-primary to-amber-600 bg-clip-text font-medium text-transparent">
-              Admin
-            </span>
+                        <span className="font-bold text-primary">
+                            Olá {userFirstName}!
+                        </span>
                     </NavLink>
                 </div>
             </nav>
