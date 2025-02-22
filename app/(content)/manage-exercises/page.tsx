@@ -11,6 +11,19 @@ type Exercise = {
   exerciseVideoLink?: string;
 };
 
+const muscleGroups = [
+  "Peito",
+  "Costas",
+  "Pernas",
+  "Ombros",
+  "Bíceps",
+  "Tríceps",
+  "Abdômen",
+  "Glúteos",
+  "Cardio",
+  "Alongamento"
+];
+
 export default function ManageExercisesPage() {
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [filteredExercises, setFilteredExercises] = useState<Exercise[]>([]);
@@ -116,6 +129,19 @@ export default function ManageExercisesPage() {
       border: "1px solid #e2e8f0",
       width: "100%",
       fontSize: "0.875rem",
+    },
+    select: {
+      padding: "0.5rem",
+      borderRadius: "0.25rem",
+      border: "1px solid #e2e8f0",
+      width: "100%",
+      fontSize: "0.875rem",
+      backgroundColor: "white",
+      appearance: "none" as const,
+      backgroundImage: "url(\"data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e\")",
+      backgroundRepeat: "no-repeat",
+      backgroundPosition: "right 0.5rem center",
+      backgroundSize: "1em",
     },
     searchContainer: { position: "relative" as const, marginBottom: "1.5rem" },
     searchInput: {
@@ -233,14 +259,19 @@ export default function ManageExercisesPage() {
           >
             Grupo Muscular
           </label>
-          <input
-            style={styles.input}
+          <select
+            style={styles.select}
             value={formData.targetBodyPart}
             onChange={(e) =>
               setFormData({ ...formData, targetBodyPart: e.target.value })
             }
             required
-          />
+          >
+            <option value="" disabled>Selecione um grupo muscular</option>
+            {muscleGroups.map(group => (
+              <option key={group} value={group}>{group}</option>
+            ))}
+          </select>
         </div>
 
         <div>
