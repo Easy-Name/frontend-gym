@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 import { Dumbbell, Search, Calendar, Plus, Save, MessageCircle } from "lucide-react";
 
@@ -41,7 +41,9 @@ export default function ManageWorkoutsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
-  const [isSearchFocused, setIsSearchFocused] = useState(false); // Track search input focus
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+
+  const dropdownRef = useRef<HTMLDivElement>(null); // Ref for the dropdown
 
   const muscleGroups = ["Peito", "Costas", "Pernas", "Ombro", "Bíceps", "Tríceps"];
   const exercisesByMuscle = {
@@ -217,6 +219,18 @@ export default function ManageWorkoutsPage() {
     }
   };
 
+  const handleBlur = () => {
+    setTimeout(() => {
+      // Check if the dropdown or its children are still focused
+      if (!dropdownRef.current?.contains(document.activeElement)) {
+        setIsSearchFocused(false);
+        if (searchTerm === "") {
+          setFilteredUsers([]);
+        }
+      }
+    }, 200); // 200ms delay
+  };
+
   return (
     <div style={styles.container}>
       <div style={styles.header}>
@@ -236,18 +250,16 @@ export default function ManageWorkoutsPage() {
               setFilteredUsers(users);
             }
           }}
-          onBlur={() => {
-            setIsSearchFocused(false);
-            if (searchTerm === "") {
-              setFilteredUsers([]);
-            }
-          }}
+          onBlur={handleBlur} // Use the new handleBlur function
           autoComplete="off"
         />
         <Search size={20} style={styles.searchIcon} />
 
         {filteredUsers.length > 0 && (
-          <div style={styles.dropdownContainer}>
+          <div
+            style={styles.dropdownContainer}
+            ref={dropdownRef} // Attach the ref to the dropdown
+          >
             {filteredUsers.map((user) => (
               <div
                 key={user.id}
