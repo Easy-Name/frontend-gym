@@ -25,7 +25,7 @@ export default function ExerciseTable({
   const styles = {
     table: { width: "100%", borderCollapse: "collapse", marginTop: "2rem", backgroundColor: "white" },
     tableHeader: { background: "#f8fafc", padding: "1rem", textAlign: "left" as const, fontWeight: 600, borderBottom: "2px solid #e2e8f0" },
-    tableCell: { padding: "1rem", borderBottom: "1px solid #e2e8f0", "&:last-child": { width: "250px" } },
+    tableCell: { padding: "1rem", borderBottom: "1px solid #e2e8f0", "&:lastChild": { width: "250px" } },
     input: { padding: "0.5rem", borderRadius: "0.25rem", border: "1px solid #e2e8f0", width: "100%", fontSize: "0.875rem" },
   };
 
