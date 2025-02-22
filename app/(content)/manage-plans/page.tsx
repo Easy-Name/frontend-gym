@@ -1,5 +1,4 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Dumbbell, Search, Calendar, Plus, Save, MessageCircle } from "lucide-react";
@@ -20,11 +19,20 @@ type WorkoutPlan = {
   exercises: Exercise[];
 };
 
+type User = {
+  id: number;
+  firstName: string;
+  lastName: string;
+  email: string;
+  telephone: string;
+};
+
 type FormData = Omit<WorkoutPlan, "id">;
 
 export default function ManageWorkoutsPage() {
   const [plans, setPlans] = useState<WorkoutPlan[]>([]);
-  const [students, setStudents] = useState<string[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [formData, setFormData] = useState<FormData>({
     name: "",
     student: "",
@@ -47,15 +55,49 @@ export default function ManageWorkoutsPage() {
   const styles = {
     container: { maxWidth: "1200px", margin: "0 auto", padding: "2rem" },
     header: { fontSize: "2rem", fontWeight: 700, marginBottom: "2rem", display: "flex", alignItems: "center", gap: "1rem" },
-    searchContainer: { position: "relative", marginBottom: "2rem" },
+    searchContainer: {
+      position: "relative",
+      marginBottom: "2rem",
+      width: "100%",
+      zIndex: 50
+    },
     searchInput: {
       padding: "0.75rem 2.5rem 0.75rem 1rem",
       borderRadius: "0.5rem",
       border: "1px solid #e2e8f0",
       width: "100%",
       fontSize: "1rem",
+      backgroundColor: "white",
     },
-    searchIcon: { position: "absolute", right: "1rem", top: "50%", transform: "translateY(-50%)", color: "#64748b" },
+    searchIcon: {
+      position: "absolute",
+      right: "1rem",
+      top: "50%",
+      transform: "translateY(-50%)",
+      color: "#64748b"
+    },
+    dropdownContainer: {
+      position: "absolute",
+      top: "calc(100% + 4px)",
+      left: 0,
+      right: 0,
+      maxHeight: "200px",
+      overflowY: "auto",
+      background: "white",
+      border: "1px solid #e2e8f0",
+      borderRadius: "0.5rem",
+      boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
+      zIndex: 51,
+    },
+    dropdownItem: {
+      padding: "0.75rem 1rem",
+      cursor: "pointer",
+      transition: "background-color 0.2s",
+      backgroundColor: "white",
+      "&:hover": {
+        backgroundColor: "#f8fafc",
+      },
+    },
     table: { width: "100%", borderCollapse: "collapse", marginTop: "2rem", backgroundColor: "white" },
     tableHeader: {
       background: "#f8fafc",
@@ -91,21 +133,60 @@ export default function ManageWorkoutsPage() {
   };
 
   useEffect(() => {
-    // Fetch students and plans
     const fetchData = async () => {
       try {
-        const [studentsRes, plansRes] = await Promise.all([
-          axios.get("/api/students"),
-          axios.get("/api/plans")
-        ]);
-        setStudents(studentsRes.data);
-        setPlans(plansRes.data);
+        const token = localStorage.getItem("token");
+        if (!token) throw new Error("Token de acesso não encontrado");
+
+        const usersRes = await axios.get("http://localhost:3005/users/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        setUsers(usersRes.data);
+        setFilteredUsers([]);
       } catch (error) {
         handleError(error, "Failed to load data");
       }
     };
     fetchData();
   }, []);
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    if (term.trim() === '') {
+      setFilteredUsers([]);
+      return;
+    }
+
+    const filtered = users.filter(user =>
+      `${user.firstName} ${user.lastName}`.toLowerCase().includes(term.toLowerCase()) ||
+      user.email.toLowerCase().includes(term.toLowerCase()) ||
+      user.telephone.toLowerCase().includes(term.toLowerCase())
+    );
+    setFilteredUsers(filtered);
+  };
+
+  const handleUserSelect = (user: User) => {
+    setFormData(prev => ({
+      ...prev,
+      student: `${user.firstName} ${user.lastName}`
+    }));
+    setSearchTerm(`${user.firstName} ${user.lastName}`);
+    setFilteredUsers([]);
+  };
+
+  const handleError = (error: unknown, defaultMessage: string) => {
+    let errorMessage = defaultMessage;
+    if (error instanceof Error) {
+      errorMessage = error.message;
+    } else if (typeof error === 'string') {
+      errorMessage = error;
+    } else if (axios.isAxiosError(error)) {
+      errorMessage = error.response?.data?.message || defaultMessage;
+    }
+    console.error('[Error]', errorMessage);
+    setMessage({ type: "error", text: errorMessage });
+  };
 
   const addExercise = () => {
     setFormData(prev => ({
@@ -124,7 +205,6 @@ export default function ManageWorkoutsPage() {
     e.preventDefault();
     setLoading(true);
     try {
-      // API call to save plan
       await axios.post("/api/plans", formData);
       setMessage({ type: "success", text: "Treino salvo com sucesso!" });
     } catch (error) {
@@ -146,9 +226,29 @@ export default function ManageWorkoutsPage() {
           style={styles.searchInput}
           placeholder="Pesquisar aluno..."
           value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          onChange={(e) => handleSearch(e.target.value)}
+          autoComplete="off"
         />
         <Search size={20} style={styles.searchIcon} />
+
+        {searchTerm.trim() !== '' && filteredUsers.length > 0 && (
+          <div style={styles.dropdownContainer}>
+            {filteredUsers.map((user) => (
+              <div
+                key={user.id}
+                style={{
+                  ...styles.dropdownItem,
+                  '&:hover': {
+                    backgroundColor: '#f8fafc',
+                  }
+                }}
+                onClick={() => handleUserSelect(user)}
+              >
+                {`${user.firstName} ${user.lastName} - ${user.email}`}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <table style={styles.table}>
@@ -242,7 +342,6 @@ export default function ManageWorkoutsPage() {
           <Plus size={16} />
           Adicionar Exercício
         </button>
-
         <button
           style={{ ...styles.button, background: "#10b981", color: "white" }}
           onClick={handleSubmit}
@@ -251,7 +350,6 @@ export default function ManageWorkoutsPage() {
           <Save size={16} />
           {loading ? "Salvando..." : "Salvar Treino"}
         </button>
-
         <button
           style={{ ...styles.button, background: "#8b5cf6", color: "white" }}
         >
