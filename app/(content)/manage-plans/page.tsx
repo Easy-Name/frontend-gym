@@ -46,6 +46,33 @@ export default function ManageWorkoutsPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [originalPlanCompositionIds, setOriginalPlanCompositionIds] = useState<number[]>([]);
+  const [allExercises, setAllExercises] = useState<any[]>([]);
+
+  // Fetch all exercises on mount
+  useEffect(() => {
+    const fetchExercises = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        const res = await axios.get("http://localhost:3005/exercise", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setAllExercises(res.data);
+      } catch (error) {
+        console.error("Error fetching exercises:", error);
+      }
+    };
+    fetchExercises();
+  }, []);
+
+  // Helper function to get exercise ID based on name and muscle group
+  const getExerciseId = (exerciseName: string, targetBodyPart: string) => {
+    const exercise = allExercises.find(
+      (e) =>
+        e.exerciseName.toLowerCase() === exerciseName.toLowerCase() &&
+        e.targetBodyPart.toLowerCase() === targetBodyPart.toLowerCase()
+    );
+    return exercise?.id;
+  };
 
   const handleExerciseRemove = (index: number) => {
     setFormData(prev => ({
@@ -54,6 +81,7 @@ export default function ManageWorkoutsPage() {
     }));
   };
 
+  // Fetch users on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -70,6 +98,7 @@ export default function ManageWorkoutsPage() {
     fetchData();
   }, []);
 
+  // Handle user selection
   const handleUserSelect = async (user: User) => {
     try {
       const token = localStorage.getItem("token");
@@ -93,16 +122,14 @@ export default function ManageWorkoutsPage() {
 
       const exercisesWithDetails = await Promise.all(
         planResponse.data.map(async (planEntry: any) => {
-          const exerciseResponse = await axios.get(
-            `http://localhost:3005/exercise/${planEntry.exerciseId}`,
-            { headers: { Authorization: `Bearer ${token}` } }
-          );
+          // Find correct exercise from pre-fetched list
+          const exercise = allExercises.find(e => e.id === planEntry.exerciseId);
 
           return {
             planCompositionId: planEntry.id,
             day: planEntry.day,
-            muscle: exerciseResponse.data.targetBodyPart,
-            exercise: exerciseResponse.data.exerciseName,
+            muscle: exercise?.targetBodyPart || "",
+            exercise: exercise?.exerciseName || "",
             sets: planEntry.numberOfSets,
             reps: planEntry.numberOfRepetitions,
             observations: planEntry.observations || ""
@@ -120,11 +147,13 @@ export default function ManageWorkoutsPage() {
     }
   };
 
+  // Handle errors
   const handleError = (error: unknown) => {
     console.error("[Error]", error);
     setMessage({ type: "error", text: "Ocorreu um erro" });
   };
 
+  // Add a new exercise to the form
   const addExercise = () => {
     setFormData((prev) => ({
       ...prev,
@@ -132,12 +161,14 @@ export default function ManageWorkoutsPage() {
     }));
   };
 
+  // Handle changes to exercise fields
   const handleExerciseChange = (index: number, field: keyof Exercise, value: string | number) => {
     const newExercises = [...formData.exercises];
     newExercises[index][field] = value as never;
     setFormData((prev) => ({ ...prev, exercises: newExercises }));
   };
 
+  // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -148,10 +179,14 @@ export default function ManageWorkoutsPage() {
       if (!formData.userId) throw new Error("Selecione um aluno primeiro");
 
       for (const exercise of formData.exercises) {
+        const exerciseId = getExerciseId(exercise.exercise, exercise.muscle);
+        if (!exerciseId) throw new Error(`Exercício '${exercise.exercise}' não encontrado para ${exercise.muscle}`);
+
         if (exercise.planCompositionId) {
           await axios.patch(
             `http://localhost:3005/plan-composition/${exercise.planCompositionId}`,
             {
+              exerciseId,
               day: exercise.day,
               numberOfSets: exercise.sets,
               numberOfRepetitions: exercise.reps,
@@ -160,27 +195,15 @@ export default function ManageWorkoutsPage() {
             { headers: { Authorization: `Bearer ${token}` } }
           );
         } else {
-          const exerciseResponse = await axios.get("http://localhost:3005/exercise", {
-            params: {
-              exerciseName: exercise.exercise,
-              targetBodyPart: exercise.muscle,
-            },
-            headers: { Authorization: `Bearer ${token}` },
-          });
-
-          if (!exerciseResponse.data.length) {
-            throw new Error(`Exercício '${exercise.exercise}' não encontrado para ${exercise.muscle}`);
-          }
-
           await axios.post(
             "http://localhost:3005/plan-composition",
             {
-              exerciseId: exerciseResponse.data[0].id,
+              exerciseId,
               userId: formData.userId,
               day: exercise.day,
               numberOfSets: exercise.sets,
               numberOfRepetitions: exercise.reps,
-              observations: exercise.observations,
+              observations: exercise.observations
             },
             { headers: { Authorization: `Bearer ${token}` } }
           );
@@ -209,6 +232,7 @@ export default function ManageWorkoutsPage() {
     }
   };
 
+  // Styles
   const styles = {
     container: { maxWidth: "1200px", margin: "0 auto", padding: "2rem" },
     header: { fontSize: "2rem", fontWeight: 700, marginBottom: "2rem", display: "flex", alignItems: "center", gap: "1rem" },
