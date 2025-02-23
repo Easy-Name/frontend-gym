@@ -8,6 +8,7 @@ import ExerciseTable from "@/components/custom/ExerciseTable";
 import ActionButtons from "@/components/custom/ActionButtons";
 
 type Exercise = {
+  planCompositionId?: number;
   day: string;
   muscle: string;
   exercise: string;
@@ -31,7 +32,7 @@ type User = {
   telephone: string;
 };
 
-type FormData = Omit<WorkoutPlan, "id">;
+type FormData = Omit<WorkoutPlan, "id"> & { userId?: number };
 
 export default function ManageWorkoutsPage() {
   const [plans, setPlans] = useState<WorkoutPlan[]>([]);
@@ -40,9 +41,11 @@ export default function ManageWorkoutsPage() {
     name: "",
     student: "",
     exercises: [],
+    userId: undefined,
   });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [originalPlanCompositionIds, setOriginalPlanCompositionIds] = useState<number[]>([]);
 
   const handleExerciseRemove = (index: number) => {
     setFormData(prev => ({
@@ -72,12 +75,14 @@ export default function ManageWorkoutsPage() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Token não encontrado");
 
-      // Set student name
-      setFormData(prev => ({
-        ...prev,
+      // Reset form data
+      setFormData({
+        name: "",
         student: `${user.firstName} ${user.lastName}`,
-        exercises: []
-      }));
+        exercises: [],
+        userId: user.id,
+      });
+      setOriginalPlanCompositionIds([]);
 
       // Fetch user's workout plan
       const planResponse = await axios.get(
@@ -85,7 +90,9 @@ export default function ManageWorkoutsPage() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      console.log("Plan Response:", planResponse.data); // Debugging
+      // Store original plan composition IDs
+      const planCompositionIds = planResponse.data.map((entry: any) => entry.id);
+      setOriginalPlanCompositionIds(planCompositionIds);
 
       // Fetch exercise details for each plan entry
       const exercisesWithDetails = await Promise.all(
@@ -95,9 +102,8 @@ export default function ManageWorkoutsPage() {
             { headers: { Authorization: `Bearer ${token}` } }
           );
 
-          console.log("Exercise Response:", exerciseResponse.data); // Debugging
-
           return {
+            planCompositionId: planEntry.id,
             day: planEntry.day,
             muscle: exerciseResponse.data.targetBodyPart,
             exercise: exerciseResponse.data.exerciseName,
@@ -108,9 +114,6 @@ export default function ManageWorkoutsPage() {
         })
       );
 
-      console.log("Exercises with Details:", exercisesWithDetails); // Debugging
-
-      // Update form data with fetched exercises
       setFormData(prev => ({
         ...prev,
         exercises: exercisesWithDetails
@@ -150,9 +153,72 @@ export default function ManageWorkoutsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    const token = localStorage.getItem("token");
+
     try {
-      await axios.post("/api/plans", formData);
+      if (!token) throw new Error("Token de acesso não encontrado");
+      if (!formData.userId) throw new Error("Selecione um aluno primeiro");
+
+      // Process updates and new entries
+      for (const exercise of formData.exercises) {
+        if (exercise.planCompositionId) {
+          // Update existing entry (PATCH)
+          await axios.patch(
+            `http://localhost:3005/plan-composition/${exercise.planCompositionId}`,
+            {
+              day: exercise.day,
+              numberOfSets: exercise.sets,
+              numberOfRepetitions: exercise.reps,
+              observations: exercise.observations,
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+        } else {
+          // Create new entry (POST)
+          // Find exercise ID by name and muscle
+          const exerciseResponse = await axios.get("http://localhost:3005/exercise", {
+            params: {
+              exerciseName: exercise.exercise,
+              targetBodyPart: exercise.muscle,
+            },
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          if (!exerciseResponse.data.length) {
+            throw new Error(`Exercício '${exercise.exercise}' não encontrado para ${exercise.muscle}`);
+          }
+
+          await axios.post(
+            "http://localhost:3005/plan-composition",
+            {
+              exerciseId: exerciseResponse.data[0].id,
+              userId: formData.userId,
+              day: exercise.day,
+              numberOfSets: exercise.sets,
+              numberOfRepetitions: exercise.reps,
+              observations: exercise.observations,
+            },
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+        }
+      }
+
+      // Process deletions
+      const currentIds = formData.exercises
+        .map(e => e.planCompositionId)
+        .filter((id): id is number => !!id);
+
+      const idsToDelete = originalPlanCompositionIds.filter(id => !currentIds.includes(id));
+
+      for (const id of idsToDelete) {
+        await axios.delete(
+          `http://localhost:3005/plan-composition/${id}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      }
+
       setMessage({ type: "success", text: "Treino salvo com sucesso!" });
+      setOriginalPlanCompositionIds(currentIds.filter(id => !!id) as number[]);
     } catch (error) {
       handleError(error, "Falha ao salvar treino");
     } finally {
