@@ -64,7 +64,7 @@ export default function ManageWorkoutsPage() {
         });
         setUsers(usersRes.data);
       } catch (error) {
-        handleError(error, "Failed to load data");
+        handleError(error);
       }
     };
     fetchData();
@@ -75,7 +75,6 @@ export default function ManageWorkoutsPage() {
       const token = localStorage.getItem("token");
       if (!token) throw new Error("Token não encontrado");
 
-      // Reset form data
       setFormData({
         name: "",
         student: `${user.firstName} ${user.lastName}`,
@@ -84,17 +83,14 @@ export default function ManageWorkoutsPage() {
       });
       setOriginalPlanCompositionIds([]);
 
-      // Fetch user's workout plan
       const planResponse = await axios.get(
         `http://localhost:3005/plan-composition/user/${user.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      // Store original plan composition IDs
       const planCompositionIds = planResponse.data.map((entry: any) => entry.id);
       setOriginalPlanCompositionIds(planCompositionIds);
 
-      // Fetch exercise details for each plan entry
       const exercisesWithDetails = await Promise.all(
         planResponse.data.map(async (planEntry: any) => {
           const exerciseResponse = await axios.get(
@@ -120,21 +116,13 @@ export default function ManageWorkoutsPage() {
       }));
 
     } catch (error) {
-      handleError(error, "Falha ao carregar o plano do usuário");
+      handleError(error);
     }
   };
 
-  const handleError = (error: unknown, defaultMessage: string) => {
-    let errorMessage = defaultMessage;
-    if (error instanceof Error) {
-      errorMessage = error.message;
-    } else if (typeof error === "string") {
-      errorMessage = error;
-    } else if (axios.isAxiosError(error)) {
-      errorMessage = error.response?.data?.message || defaultMessage;
-    }
-    console.error("[Error]", errorMessage);
-    setMessage({ type: "error", text: errorMessage });
+  const handleError = (error: unknown) => {
+    console.error("[Error]", error);
+    setMessage({ type: "error", text: "Ocorreu um erro" });
   };
 
   const addExercise = () => {
@@ -159,10 +147,8 @@ export default function ManageWorkoutsPage() {
       if (!token) throw new Error("Token de acesso não encontrado");
       if (!formData.userId) throw new Error("Selecione um aluno primeiro");
 
-      // Process updates and new entries
       for (const exercise of formData.exercises) {
         if (exercise.planCompositionId) {
-          // Update existing entry (PATCH)
           await axios.patch(
             `http://localhost:3005/plan-composition/${exercise.planCompositionId}`,
             {
@@ -174,8 +160,6 @@ export default function ManageWorkoutsPage() {
             { headers: { Authorization: `Bearer ${token}` } }
           );
         } else {
-          // Create new entry (POST)
-          // Find exercise ID by name and muscle
           const exerciseResponse = await axios.get("http://localhost:3005/exercise", {
             params: {
               exerciseName: exercise.exercise,
@@ -203,7 +187,6 @@ export default function ManageWorkoutsPage() {
         }
       }
 
-      // Process deletions
       const currentIds = formData.exercises
         .map(e => e.planCompositionId)
         .filter((id): id is number => !!id);
@@ -217,10 +200,10 @@ export default function ManageWorkoutsPage() {
         );
       }
 
-      setMessage({ type: "success", text: "Treino salvo com sucesso!" });
+      setMessage({ type: "success", text: "Treino editado com sucesso !" });
       setOriginalPlanCompositionIds(currentIds.filter(id => !!id) as number[]);
     } catch (error) {
-      handleError(error, "Falha ao salvar treino");
+      handleError(error);
     } finally {
       setLoading(false);
     }
@@ -229,6 +212,33 @@ export default function ManageWorkoutsPage() {
   const styles = {
     container: { maxWidth: "1200px", margin: "0 auto", padding: "2rem" },
     header: { fontSize: "2rem", fontWeight: 700, marginBottom: "2rem", display: "flex", alignItems: "center", gap: "1rem" },
+    modalOverlay: {
+      position: 'fixed' as const,
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center'
+    },
+    modalContent: {
+      background: 'white',
+      padding: '2rem',
+      borderRadius: '8px',
+      textAlign: 'center' as const,
+      minWidth: '300px'
+    },
+    modalButton: {
+      marginTop: '1rem',
+      padding: '0.5rem 1rem',
+      backgroundColor: '#007bff',
+      color: 'white',
+      border: 'none',
+      borderRadius: '4px',
+      cursor: 'pointer'
+    }
   };
 
   return (
@@ -244,6 +254,20 @@ export default function ManageWorkoutsPage() {
         onExerciseRemove={handleExerciseRemove}
       />
       <ActionButtons onAddExercise={addExercise} onSubmit={handleSubmit} loading={loading} />
+
+      {message && (
+        <div style={styles.modalOverlay}>
+          <div style={styles.modalContent}>
+            <p>{message.text}</p>
+            <button
+              style={styles.modalButton}
+              onClick={() => setMessage(null)}
+            >
+              OK
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
