@@ -164,7 +164,20 @@ export default function ManageWorkoutsPage() {
   // Handle changes to exercise fields
   const handleExerciseChange = (index: number, field: keyof Exercise, value: string | number) => {
     const newExercises = [...formData.exercises];
-    newExercises[index][field] = value as never;
+
+    // Ensure that sets and reps are numbers
+    if (field === 'sets' || field === 'reps') {
+      const numericValue = Number(value);
+      if (!isNaN(numericValue)) {
+        newExercises[index][field] = numericValue;
+      } else {
+        // Handle invalid input (e.g., set to 0 or show an error)
+        newExercises[index][field] = 0;
+      }
+    } else {
+      newExercises[index][field] = value as never;
+    }
+
     setFormData((prev) => ({ ...prev, exercises: newExercises }));
   };
 
