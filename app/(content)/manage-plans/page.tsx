@@ -56,7 +56,7 @@ export default function ManageWorkoutsPage() {
       try {
         const token = localStorage.getItem("token");
         if (!token) throw new Error("Token de acesso não encontrado");
-        const usersRes = await axios.get("http://localhost:3005/users/me", {
+        const usersRes = await axios.get("http://localhost:3005/users", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUsers(usersRes.data);
@@ -67,11 +67,58 @@ export default function ManageWorkoutsPage() {
     fetchData();
   }, []);
 
-  const handleUserSelect = (user: User) => {
-    setFormData((prev) => ({
-      ...prev,
-      student: `${user.firstName} ${user.lastName}`,
-    }));
+  const handleUserSelect = async (user: User) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) throw new Error("Token não encontrado");
+
+      // Set student name
+      setFormData(prev => ({
+        ...prev,
+        student: `${user.firstName} ${user.lastName}`,
+        exercises: []
+      }));
+
+      // Fetch user's workout plan
+      const planResponse = await axios.get(
+        `http://localhost:3005/plan-composition/user/${user.id}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      console.log("Plan Response:", planResponse.data); // Debugging
+
+      // Fetch exercise details for each plan entry
+      const exercisesWithDetails = await Promise.all(
+        planResponse.data.map(async (planEntry: any) => {
+          const exerciseResponse = await axios.get(
+            `http://localhost:3005/exercise/${planEntry.exerciseId}`,
+            { headers: { Authorization: `Bearer ${token}` } }
+          );
+
+          console.log("Exercise Response:", exerciseResponse.data); // Debugging
+
+          return {
+            day: planEntry.day,
+            muscle: exerciseResponse.data.targetBodyPart,
+            exercise: exerciseResponse.data.exerciseName,
+            sets: planEntry.numberOfSets,
+            reps: planEntry.numberOfRepetitions,
+            observations: planEntry.observations || ""
+          };
+        })
+      );
+
+      console.log("Exercises with Details:", exercisesWithDetails); // Debugging
+
+      // Update form data with fetched exercises
+      setFormData(prev => ({
+        ...prev,
+        exercises: exercisesWithDetails
+      }));
+
+    } catch (error) {
+      handleError(error, "Falha ao carregar o plano do usuário");
+    }
   };
 
   const handleError = (error: unknown, defaultMessage: string) => {
@@ -107,7 +154,7 @@ export default function ManageWorkoutsPage() {
       await axios.post("/api/plans", formData);
       setMessage({ type: "success", text: "Treino salvo com sucesso!" });
     } catch (error) {
-      handleError(error, "Failed to save workout");
+      handleError(error, "Falha ao salvar treino");
     } finally {
       setLoading(false);
     }
