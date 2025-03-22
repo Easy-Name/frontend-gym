@@ -2,9 +2,17 @@
 
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { User, Lock, Mail, Phone } from "lucide-react";
+import { User, Lock, Mail, Phone, LogOut } from "lucide-react";
+import useAuth from "@/hooks/useAuth";
+
+const getCookie = (name: string) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift();
+};
 
 export default function AdminPage() {
+  useAuth(); // Handles all authentication checks
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -12,30 +20,30 @@ export default function AdminPage() {
     password: "",
     telephone: "",
   });
-  const [confirmPassword, setConfirmPassword] = useState(""); // State for confirm password
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{
     type: "success" | "error";
     text: string;
   } | null>(null);
+  const [userData, setUserData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    telephone: "",
+  });
 
-  // Fetch professor's data on component mount
   useEffect(() => {
     const fetchProfessorData = async () => {
       try {
-        const token = localStorage.getItem("token");
-        if (!token) throw new Error("Token de autenticação não encontrado");
-
+        const token = getCookie('token');
         const response = await axios.get("http://localhost:3005/professor/me", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         const { firstName, lastName, email, telephone } = response.data;
-
-        // Update formData with fetched data (excluding password)
-        setFormData((prev) => ({
+        setUserData({ firstName, lastName, email, telephone });
+        setFormData(prev => ({
           ...prev,
           firstName,
           lastName,
@@ -43,21 +51,23 @@ export default function AdminPage() {
           telephone,
         }));
       } catch (error) {
-        console.error("Erro ao carregar informações do professor:", error);
+        console.error("Erro ao carregar informações:", error);
+        setMessage({
+          type: "error",
+          text: "Falha ao carregar dados do professor"
+        });
       }
     };
 
     fetchProfessorData();
-  }, []); // Empty dependency array ensures this runs only once on mount
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleConfirmPasswordChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
+  const handleConfirmPasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setConfirmPassword(e.target.value);
   };
 
@@ -67,50 +77,42 @@ export default function AdminPage() {
     setMessage(null);
 
     try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("Token de autenticação não encontrado");
-
-      // Validate password and confirm password
+      const token = getCookie('token');
       if (formData.password && formData.password !== confirmPassword) {
         throw new Error("As senhas não coincidem.");
       }
 
-      // Filter out empty fields
       const filteredData = Object.keys(formData).reduce((acc, key) => {
-        const formKey = key as keyof typeof formData; // Type assertion
+        const formKey = key as keyof typeof formData;
         if (formData[formKey] !== "") {
           acc[formKey] = formData[formKey];
         }
         return acc;
-      }, {} as Partial<typeof formData>); // Use Partial to allow only some fields
+      }, {} as Partial<typeof formData>);
 
-      const response = await axios.patch(
+      await axios.patch(
         "http://localhost:3005/professor/me",
         filteredData,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
-      setMessage({
-        type: "success",
-        text: "Informações atualizadas com sucesso!",
-      });
-      console.log("Dados atualizados:", response.data);
+      setUserData(prev => ({ ...prev, ...filteredData }));
+      setMessage({ type: "success", text: "Informações atualizadas com sucesso!" });
+      setFormData(prev => ({ ...prev, password: "" }));
+      setConfirmPassword("");
     } catch (error) {
       setMessage({
         type: "error",
-        text:
-          error instanceof Error
-            ? error.message
-            : "Erro ao atualizar informações",
+        text: error instanceof Error ? error.message : "Erro ao atualizar informações"
       });
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleLogout = () => {
+    document.cookie = "token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;";
+    window.location.href = "/login";
   };
 
   return (
@@ -134,10 +136,9 @@ export default function AdminPage() {
 
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
-          {/* Nome */}
           <div className="flex flex-col space-y-2">
             <label
-              htmlFor="name"
+              htmlFor="firstName"
               className="font-medium flex items-center gap-2"
             >
               <User className="w-5 h-5" />
@@ -153,7 +154,7 @@ export default function AdminPage() {
               placeholder="Seu nome"
             />
           </div>
-          {/* Sobrenome */}
+
           <div className="flex flex-col space-y-2">
             <label
               htmlFor="lastName"
@@ -173,7 +174,6 @@ export default function AdminPage() {
             />
           </div>
 
-          {/* Email */}
           <div className="flex flex-col space-y-2">
             <label
               htmlFor="email"
@@ -193,7 +193,6 @@ export default function AdminPage() {
             />
           </div>
 
-          {/* Telefone */}
           <div className="flex flex-col space-y-2">
             <label
               htmlFor="telephone"
@@ -213,7 +212,6 @@ export default function AdminPage() {
             />
           </div>
 
-          {/* Nova Senha */}
           <div className="flex flex-col space-y-2">
             <label
               htmlFor="password"
@@ -237,7 +235,6 @@ export default function AdminPage() {
             </p>
           </div>
 
-          {/* Confirmar Nova Senha (Conditional Rendering) */}
           {formData.password && (
             <div className="flex flex-col space-y-2">
               <label
@@ -276,6 +273,14 @@ export default function AdminPage() {
           )}
         </button>
       </form>
+
+      <button
+        onClick={handleLogout}
+        className="w-full bg-red-600 text-white p-3 rounded-lg hover:bg-red-700 transition-colors flex items-center justify-center gap-2 mt-4"
+      >
+        <LogOut className="w-5 h-5" />
+        <span>Sair</span>
+      </button>
     </div>
   );
 }

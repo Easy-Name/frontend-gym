@@ -67,8 +67,10 @@ export default function AuthForm() {
         const { accessToken, refreshToken } = (
           await axios.post("http://localhost:3005/auth/sign-in", loginValues)
         ).data;
-        localStorage.setItem("token", accessToken);
-        localStorage.setItem("refreshToken", refreshToken);
+
+        document.cookie = `token=${accessToken}; Path=/; Secure; SameSite=Lax; max-age=86400`;
+        document.cookie = `refreshToken=${refreshToken}; Path=/; Secure; SameSite=Lax; max-age=604800`;
+
         router.push("/manage-users");
       }
     } catch (error) {
@@ -102,7 +104,7 @@ export default function AuthForm() {
               <form onSubmit={form.handleSubmit(onSubmit)}>
                 {isRegistering && (
                   <>
-                    {["firstName", "lastName", "telephone"].map((field) => (
+                    {(['firstName', 'lastName', 'telephone'] as const).map((field) => (
                       <div key={field} className="grid gap-2">
                         <FormField
                           control={form.control}
@@ -136,7 +138,7 @@ export default function AuthForm() {
                     ))}
                   </>
                 )}
-                {["email", "password"].map((field) => (
+                {(['email', 'password'] as const).map((field) => (
                   <div key={field} className="grid gap-2">
                     <FormField
                       control={form.control}

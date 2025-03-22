@@ -6,6 +6,14 @@ import { Dumbbell } from "lucide-react";
 import SearchUser from "@/components/custom/SearchUser";
 import ExerciseTable from "@/components/custom/ExerciseTable";
 import ActionButtons from "@/components/custom/ActionButtons";
+import useAuth from "@/hooks/useAuth";
+
+// Add cookie helper function
+const getCookie = (name: string) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift();
+};
 
 type Exercise = {
   planCompositionId?: number;
@@ -35,6 +43,7 @@ type User = {
 type FormData = Omit<WorkoutPlan, "id"> & { userId?: number };
 
 export default function ManageWorkoutsPage() {
+  useAuth();
   const [plans, setPlans] = useState<WorkoutPlan[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [formData, setFormData] = useState<FormData>({
@@ -52,7 +61,7 @@ export default function ManageWorkoutsPage() {
   useEffect(() => {
     const fetchExercises = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const token = getCookie('token'); // Changed to cookie
         const res = await axios.get("http://localhost:3005/exercise", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -85,7 +94,7 @@ export default function ManageWorkoutsPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem("token");
+        const token = getCookie('token'); // Changed to cookie
         if (!token) throw new Error("Token de acesso não encontrado");
         const usersRes = await axios.get("http://localhost:3005/users", {
           headers: { Authorization: `Bearer ${token}` },
@@ -101,7 +110,7 @@ export default function ManageWorkoutsPage() {
   // Handle user selection
   const handleUserSelect = async (user: User) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getCookie('token'); // Changed to cookie
       if (!token) throw new Error("Token não encontrado");
 
       setFormData({
@@ -122,9 +131,7 @@ export default function ManageWorkoutsPage() {
 
       const exercisesWithDetails = await Promise.all(
         planResponse.data.map(async (planEntry: any) => {
-          // Find correct exercise from pre-fetched list
           const exercise = allExercises.find(e => e.id === planEntry.exerciseId);
-
           return {
             planCompositionId: planEntry.id,
             day: planEntry.day,
@@ -164,20 +171,12 @@ export default function ManageWorkoutsPage() {
   // Handle changes to exercise fields
   const handleExerciseChange = (index: number, field: keyof Exercise, value: string | number) => {
     const newExercises = [...formData.exercises];
-
-    // Ensure that sets and reps are numbers
     if (field === 'sets' || field === 'reps') {
       const numericValue = Number(value);
-      if (!isNaN(numericValue)) {
-        newExercises[index][field] = numericValue;
-      } else {
-        // Handle invalid input (e.g., set to 0 or show an error)
-        newExercises[index][field] = 0;
-      }
+      newExercises[index][field] = isNaN(numericValue) ? 0 : numericValue;
     } else {
       newExercises[index][field] = value as never;
     }
-
     setFormData((prev) => ({ ...prev, exercises: newExercises }));
   };
 
@@ -185,7 +184,7 @@ export default function ManageWorkoutsPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const token = localStorage.getItem("token");
+    const token = getCookie('token'); // Changed to cookie
 
     try {
       if (!token) throw new Error("Token de acesso não encontrado");

@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
 import { Activity, Search } from "lucide-react";
+import useAuth from "@/hooks/useAuth";
 
 type Exercise = {
   id: number;
@@ -25,6 +26,7 @@ const muscleGroups = [
 ];
 
 export default function ManageExercisesPage() {
+  useAuth() 
   const [exercises, setExercises] = useState<Exercise[]>([]);
   const [filteredExercises, setFilteredExercises] = useState<Exercise[]>([]);
   const [formData, setFormData] = useState({

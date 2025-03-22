@@ -4,23 +4,40 @@ import axios from "axios";
 import NavLink from "./nav-link";
 import { Dumbbell, Users, ClipboardList, Settings, Activity } from "lucide-react";
 
+// Cookie helper function
+const getCookie = (name) => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift();
+};
+
 export default function MainNavHeader() {
     const [userFirstName, setUserFirstName] = useState("");
 
     useEffect(() => {
         const fetchUserData = async () => {
             try {
-                const token = localStorage.getItem("token"); // Assuming the token is stored in localStorage
+                const token = getCookie('token');
+                if (!token) {
+                    console.error('No token found in cookies');
+                    return;
+                }
+
                 const response = await axios.get("http://localhost:3005/professor/me", {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
+                    headers: { Authorization: `Bearer ${token}` }
                 });
-                // Capitalize the first letter of the first name
-                const capitalizedFirstName = response.data.firstName.charAt(0).toUpperCase() + response.data.firstName.slice(1);
-                setUserFirstName(capitalizedFirstName);
+                
+                const firstName = response.data.firstName || '';
+                setUserFirstName(
+                    firstName.charAt(0).toUpperCase() + firstName.slice(1)
+                );
             } catch (error) {
                 console.error("Failed to fetch user data", error);
+                // Handle 401 unauthorized errors
+                if (axios.isAxiosError(error) && error.response?.status === 401) {
+                    document.cookie = 'token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+                    window.location.href = '/login';
+                }
             }
         };
 
@@ -86,7 +103,7 @@ export default function MainNavHeader() {
                     >
                         <Settings className="h-5 w-5 text-current" />
                         <span className="font-bold text-primary">
-                            Olá {userFirstName}!
+                            Olá, {userFirstName || 'Professor'}!
                         </span>
                     </NavLink>
                 </div>
