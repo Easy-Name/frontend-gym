@@ -14,7 +14,6 @@ type User = {
 
 type FormData = Omit<User, "id">;
 
-// Helper function to get cookies
 const getCookie = (name: string) => {
   const value = `; ${document.cookie}`;
   const parts = value.split(`; ${name}=`);
@@ -22,7 +21,7 @@ const getCookie = (name: string) => {
 };
 
 export default function CRUDPage() {
-  useAuth(); // Add auth guard
+  useAuth();
   const [users, setUsers] = useState<User[]>([]);
   const [filteredUsers, setFilteredUsers] = useState<User[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
@@ -37,7 +36,23 @@ export default function CRUDPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: "success" | "error"; text: string } | null>(null);
 
-  // Estilos (mantido igual)
+  // Add missing handlers
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSearch = (term: string) => {
+    setSearchTerm(term);
+    const filtered = users.filter(user =>
+      Object.values(user).some(value =>
+        value.toString().toLowerCase().includes(term.toLowerCase())
+      )
+    );
+    setFilteredUsers(filtered);
+  };
+
+  // Styles remain the same
   const styles = {
     container: { maxWidth: "1000px", margin: "0 auto", padding: "20px" },
     header: { fontSize: "24px", fontWeight: "bold", marginBottom: "30px" },
@@ -60,7 +75,7 @@ export default function CRUDPage() {
       width: "100%",
       boxSizing: "border-box" as const,
     },
-    table: { width: "100%", borderCollapse: "collapse", marginTop: "20px" },
+    table: { width: "100%", borderCollapse: "collapse" as const, marginTop: "20px" },
     tableHeader: {
       background: "#f5f5f5",
       padding: "12px",
@@ -97,7 +112,16 @@ export default function CRUDPage() {
     fetchUsers();
   }, []);
 
-  // Restante do código mantido igual até os handlers...
+  const handleUserClick = (user: User, operation: "update" | "delete") => {
+    setSelectedUserId(user.id);
+    setFormData({
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      telephone: user.telephone,
+    });
+    setActiveOperation(operation);
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -176,6 +200,7 @@ export default function CRUDPage() {
       setLoading(false);
     }
   };
+
   const resetForm = () => {
     setFormData({ firstName: "", lastName: "", email: "", telephone: "" });
     setSelectedUserId(null);

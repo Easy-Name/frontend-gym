@@ -96,7 +96,7 @@ export default function ManageWorkoutsPage() {
       try {
         const token = getCookie('token'); // Changed to cookie
         if (!token) throw new Error("Token de acesso não encontrado");
-        const usersRes = await axios.get("http://localhost:3005/users", {
+        const usersRes = await axios.get("http://localhost:3005/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUsers(usersRes.data);

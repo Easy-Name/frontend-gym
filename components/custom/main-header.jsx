@@ -36,7 +36,7 @@ export default function MainNavHeader() {
                 // Handle 401 unauthorized errors
                 if (axios.isAxiosError(error) && error.response?.status === 401) {
                     document.cookie = 'token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-                    window.location.href = '/login';
+                    window.location.href = '/';
                 }
             }
         };
