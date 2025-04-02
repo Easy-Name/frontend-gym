@@ -62,7 +62,7 @@ export default function ManageWorkoutsPage() {
     const fetchExercises = async () => {
       try {
         const token = getCookie('token'); // Changed to cookie
-        const res = await axios.get("172.40.3.140:3005/exercise", {
+        const res = await axios.get("http://localhost:3005/exercise", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setAllExercises(res.data);
@@ -96,7 +96,7 @@ export default function ManageWorkoutsPage() {
       try {
         const token = getCookie('token'); // Changed to cookie
         if (!token) throw new Error("Token de acesso não encontrado");
-        const usersRes = await axios.get("172.40.3.140:3005/users/me", {
+        const usersRes = await axios.get("http://localhost:3005/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUsers(usersRes.data);
@@ -122,7 +122,7 @@ export default function ManageWorkoutsPage() {
       setOriginalPlanCompositionIds([]);
 
       const planResponse = await axios.get(
-        `172.40.3.140:3005/plan-composition/user/${user.id}`,
+        `http://localhost:3005/plan-composition/user/${user.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -196,7 +196,7 @@ export default function ManageWorkoutsPage() {
 
         if (exercise.planCompositionId) {
           await axios.patch(
-            `172.40.3.140:3005/plan-composition/${exercise.planCompositionId}`,
+            `http://localhost:3005/plan-composition/${exercise.planCompositionId}`,
             {
               exerciseId,
               day: exercise.day,
@@ -208,7 +208,7 @@ export default function ManageWorkoutsPage() {
           );
         } else {
           await axios.post(
-            "172.40.3.140:3005/plan-composition",
+            "http://localhost:3005/plan-composition",
             {
               exerciseId,
               userId: formData.userId,
@@ -230,7 +230,7 @@ export default function ManageWorkoutsPage() {
 
       for (const id of idsToDelete) {
         await axios.delete(
-          `172.40.3.140:3005/plan-composition/${id}`,
+          `http://localhost:3005/plan-composition/${id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
       }
