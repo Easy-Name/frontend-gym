@@ -39,7 +39,7 @@ export default function ManageExercisesPage() {
   const fetchExercises = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get("172.40.3.140:3005/exercise", {
+      const response = await axios.get("http://172.40.3.140:3005/exercise", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setExercises(response.data);

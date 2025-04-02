@@ -29,7 +29,7 @@ export default function ExerciseTable({
     const fetchExercises = async () => {
       try {
         const token = localStorage.getItem("token");
-        const response = await fetch("172.40.3.140:3005/exercise", {
+        const response = await fetch("http://172.40.3.140:3005/exercise", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
