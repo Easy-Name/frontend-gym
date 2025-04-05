@@ -98,7 +98,7 @@ export default function CRUDPage() {
         const token = getCookie("token");
         if (!token) throw new Error("Token de acesso não encontrado");
 
-        const response = await axios.get("http://localhost:3005/users/me", {
+        const response = await axios.get("http://201.54.1.119:3005/users/me", {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -131,7 +131,7 @@ export default function CRUDPage() {
       if (!token) throw new Error("Token de acesso não encontrado");
 
       const response = await axios.post(
-        "http://localhost:3005/users/me",
+        "http://201.54.1.119:3005/users/me",
         { ...formData },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -158,7 +158,7 @@ export default function CRUDPage() {
       if (!token) throw new Error("Token de acesso não encontrado");
 
       await axios.patch(
-        `http://localhost:3005/users/me/${selectedUserId}`,
+        `http://201.54.1.119:3005/users/me/${selectedUserId}`,
         { ...formData },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -185,7 +185,7 @@ export default function CRUDPage() {
       const token = getCookie("token");
       if (!token) throw new Error("Token de acesso não encontrado");
 
-      await axios.delete(`http://localhost:3005/users/me/${selectedUserId}`, {
+      await axios.delete(`http://201.54.1.119:3005/users/me/${selectedUserId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
