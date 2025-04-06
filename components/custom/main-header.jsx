@@ -23,7 +23,7 @@ export default function MainNavHeader() {
                     return;
                 }
 
-                const response = await axios.get("http://201.54.1.119:3005/professor/me", {
+                const response = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/professor/me`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 

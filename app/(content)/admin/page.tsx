@@ -37,7 +37,7 @@ export default function AdminPage() {
     const fetchProfessorData = async () => {
       try {
         const token = getCookie('token');
-        const response = await axios.get("http://201.54.1.119:3005/professor/me", {
+        const response = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/professor/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -91,7 +91,7 @@ export default function AdminPage() {
       }, {} as Partial<typeof formData>);
 
       await axios.patch(
-        "http://201.54.1.119:3005/professor/me",
+        `${process.env.NEXT_PUBLIC_BASE_URL}/professor/me`,
         filteredData,
         { headers: { Authorization: `Bearer ${token}` } }
       );

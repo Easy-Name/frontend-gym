@@ -60,12 +60,12 @@ export default function AuthForm() {
       setError(null);
       if (isRegistering) {
         const registrationValues = values as z.infer<typeof registerSchema>;
-        await axios.post("http://201.54.1.119:3005/professor", registrationValues);
+        await axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/professor`, registrationValues);
         setIsRegistering(false);
       } else {
         const loginValues = values as z.infer<typeof loginSchema>;
         const { accessToken, refreshToken } = (
-          await axios.post("http://201.54.1.119:3005/auth/sign-in", loginValues)
+          await axios.post(`${process.env.NEXT_PUBLIC_BASE_URL}/auth/sign-in`, loginValues)
         ).data;
 
         document.cookie = `token=${accessToken}; Path=/; Secure; SameSite=Lax; max-age=86400`;
