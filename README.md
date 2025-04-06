@@ -2,6 +2,12 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+Create a `.env` file in the root of your project and add your environment variables. For example:
+
+```env
+NEXT_PUBLIC_BASE_URL=http://localhost:3005
+```
+
 First, run the development server:
 
 ```bash

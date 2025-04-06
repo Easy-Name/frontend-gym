@@ -62,7 +62,7 @@ export default function ManageWorkoutsPage() {
     const fetchExercises = async () => {
       try {
         const token = getCookie('token'); // Changed to cookie
-        const res = await axios.get("http://201.54.1.119:3005/exercise", {
+        const res = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/exercise`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setAllExercises(res.data);
@@ -96,7 +96,7 @@ export default function ManageWorkoutsPage() {
       try {
         const token = getCookie('token'); // Changed to cookie
         if (!token) throw new Error("Token de acesso não encontrado");
-        const usersRes = await axios.get("http://201.54.1.119:3005/users/me", {
+        const usersRes = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/users/me`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         setUsers(usersRes.data);
@@ -122,7 +122,7 @@ export default function ManageWorkoutsPage() {
       setOriginalPlanCompositionIds([]);
 
       const planResponse = await axios.get(
-        `http://201.54.1.119:3005/plan-composition/user/${user.id}`,
+        `${process.env.NEXT_PUBLIC_BASE_URL}/plan-composition/user/${user.id}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -196,7 +196,7 @@ export default function ManageWorkoutsPage() {
 
         if (exercise.planCompositionId) {
           await axios.patch(
-            `http://201.54.1.119:3005/plan-composition/${exercise.planCompositionId}`,
+            `${process.env.NEXT_PUBLIC_BASE_URL}/plan-composition/${exercise.planCompositionId}`,
             {
               exerciseId,
               day: exercise.day,
@@ -208,7 +208,7 @@ export default function ManageWorkoutsPage() {
           );
         } else {
           await axios.post(
-            "http://201.54.1.119:3005/plan-composition",
+            "${process.env.NEXT_PUBLIC_BASE_URL}/plan-composition",
             {
               exerciseId,
               userId: formData.userId,
@@ -230,7 +230,7 @@ export default function ManageWorkoutsPage() {
 
       for (const id of idsToDelete) {
         await axios.delete(
-          `http://201.54.1.119:3005/plan-composition/${id}`,
+          `${process.env.NEXT_PUBLIC_BASE_URL}/plan-composition/${id}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
       }

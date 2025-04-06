@@ -39,7 +39,7 @@ export default function ManageExercisesPage() {
   const fetchExercises = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await axios.get("http://201.54.1.119:3005/exercise", {
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_BASE_URL}/exercise`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       setExercises(response.data);
