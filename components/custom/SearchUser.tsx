@@ -1,7 +1,8 @@
 "use client";
 
 import { Search } from "lucide-react";
-import { useRef, useState } from "react";
+import { useRef, useState, CSSProperties } from "react";
+import "./SearchUser.css"; // Make sure to create this CSS file
 
 type User = {
   id: number;
@@ -22,7 +23,7 @@ export default function SearchUser({ users, onUserSelect }: SearchUserProps) {
   const [isSearchFocused, setIsSearchFocused] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  const styles = {
+  const styles: Record<string, CSSProperties> = {
     searchContainer: {
       position: "relative",
       marginBottom: "2rem",
@@ -62,9 +63,6 @@ export default function SearchUser({ users, onUserSelect }: SearchUserProps) {
       cursor: "pointer",
       transition: "background-color 0.2s",
       backgroundColor: "white",
-      "&:hover": {
-        backgroundColor: "#f8fafc",
-      },
     },
   };
 
@@ -75,10 +73,12 @@ export default function SearchUser({ users, onUserSelect }: SearchUserProps) {
       return;
     }
     const filtered = users.filter(
-      (user) =>
-        `${user.firstName} ${user.lastName}`.toLowerCase().includes(term.toLowerCase()) ||
-        user.email.toLowerCase().includes(term.toLowerCase()) ||
-        user.telephone.toLowerCase().includes(term.toLowerCase())
+        (user) =>
+            `${user.firstName} ${user.lastName}`
+                .toLowerCase()
+                .includes(term.toLowerCase()) ||
+            user.email.toLowerCase().includes(term.toLowerCase()) ||
+            user.telephone.toLowerCase().includes(term.toLowerCase())
     );
     setFilteredUsers(filtered);
   };
@@ -101,35 +101,36 @@ export default function SearchUser({ users, onUserSelect }: SearchUserProps) {
   };
 
   return (
-    <div style={styles.searchContainer}>
-      <input
-        style={styles.searchInput}
-        placeholder="Pesquisar aluno..."
-        value={searchTerm}
-        onChange={(e) => handleSearch(e.target.value)}
-        onFocus={() => {
-          setIsSearchFocused(true);
-          if (searchTerm === "") {
-            setFilteredUsers(users);
-          }
-        }}
-        onBlur={handleBlur}
-        autoComplete="off"
-      />
-      <Search size={20} style={styles.searchIcon} />
-      {filteredUsers.length > 0 && (
-        <div style={styles.dropdownContainer} ref={dropdownRef}>
-          {filteredUsers.map((user) => (
-            <div
-              key={user.id}
-              style={styles.dropdownItem}
-              onClick={() => handleUserSelect(user)}
-            >
-              {`${user.firstName} ${user.lastName} - ${user.email}`}
+      <div style={styles.searchContainer}>
+        <input
+            style={styles.searchInput}
+            placeholder="Pesquisar aluno..."
+            value={searchTerm}
+            onChange={(e) => handleSearch(e.target.value)}
+            onFocus={() => {
+              setIsSearchFocused(true);
+              if (searchTerm === "") {
+                setFilteredUsers(users);
+              }
+            }}
+            onBlur={handleBlur}
+            autoComplete="off"
+        />
+        <Search size={20} style={styles.searchIcon} />
+        {filteredUsers.length > 0 && (
+            <div style={styles.dropdownContainer} ref={dropdownRef}>
+              {filteredUsers.map((user) => (
+                  <div
+                      key={user.id}
+                      className="dropdown-item"
+                      style={styles.dropdownItem}
+                      onClick={() => handleUserSelect(user)}
+                  >
+                    {`${user.firstName} ${user.lastName} - ${user.email}`}
+                  </div>
+              ))}
             </div>
-          ))}
-        </div>
-      )}
-    </div>
+        )}
+      </div>
   );
 }
