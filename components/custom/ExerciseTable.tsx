@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, CSSProperties } from "react";
 
 type Exercise = {
   day: string;
@@ -18,10 +18,10 @@ interface ExerciseTableProps {
 }
 
 export default function ExerciseTable({
-  exercises,
-  onExerciseChange,
-  onExerciseRemove,
-}: ExerciseTableProps) {
+                                        exercises,
+                                        onExerciseChange,
+                                        onExerciseRemove,
+                                      }: ExerciseTableProps) {
   const [muscleGroups, setMuscleGroups] = useState<string[]>([]);
   const [exercisesByMuscle, setExercisesByMuscle] = useState<Record<string, string[]>>({});
 
@@ -38,7 +38,7 @@ export default function ExerciseTable({
         const data = await response.json();
 
         // Extract unique muscle groups
-        const muscles = Array.from(new Set(data.map((ex: any) => ex.targetBodyPart)));
+        const muscles = Array.from(new Set(data.map((ex: any) => ex.targetBodyPart))) as string[];
         setMuscleGroups(muscles);
 
         // Group exercises by muscle
@@ -57,19 +57,38 @@ export default function ExerciseTable({
     fetchExercises();
   }, []);
 
-  const styles = {
-    table: { width: "100%", borderCollapse: "collapse", marginTop: "2rem", backgroundColor: "white" },
-    tableHeader: { background: "#f8fafc", padding: "1rem", textAlign: "left" as const, fontWeight: 600, borderBottom: "2px solid #e2e8f0" },
-    tableCell: { padding: "1rem", borderBottom: "1px solid #e2e8f0" },
-    input: { padding: "0.5rem", borderRadius: "0.25rem", border: "1px solid #e2e8f0", width: "100%", fontSize: "0.875rem" },
+  const styles: Record<string, CSSProperties> = {
+    table: {
+      width: "100%",
+      borderCollapse: "collapse",
+      marginTop: "2rem",
+      backgroundColor: "white"
+    },
+    tableHeader: {
+      background: "#f8fafc",
+      padding: "1rem",
+      textAlign: "left",
+      fontWeight: 600,
+      borderBottom: "2px solid #e2e8f0"
+    },
+    tableCell: {
+      padding: "1rem",
+      borderBottom: "1px solid #e2e8f0"
+    },
+    input: {
+      padding: "0.5rem",
+      borderRadius: "0.25rem",
+      border: "1px solid #e2e8f0",
+      width: "100%",
+      fontSize: "0.875rem"
+    },
     removeButton: {
       cursor: "pointer",
       color: "#ef4444",
       background: "none",
       border: "none",
-      padding: "0.25rem",
-      "&:hover": { color: "#dc2626" }
-    },
+      padding: "0.25rem"
+    }
   };
 
   return (
