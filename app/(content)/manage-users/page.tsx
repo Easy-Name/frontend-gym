@@ -105,7 +105,7 @@ export default function CRUDPage() {
         setUsers(response.data);
         setFilteredUsers(response.data);
       } catch (error) {
-        handleError(error, "Falha ao carregar usuários");
+        handleError(error, "Falha ao carregar alunos");
       }
     };
 
@@ -140,9 +140,9 @@ export default function CRUDPage() {
       setUsers([...users, newUser]);
       setFilteredUsers([...filteredUsers, newUser]);
       resetForm();
-      setMessage({ type: "success", text: "Usuário criado com sucesso" });
+      setMessage({ type: "success", text: "Aluno criado com sucesso" });
     } catch (error) {
-      handleError(error, "Falha ao criar usuário");
+      handleError(error, "Falha ao criar aluno");
     } finally {
       setLoading(false);
     }
@@ -169,9 +169,9 @@ export default function CRUDPage() {
       setUsers(updatedUsers);
       setFilteredUsers(updatedUsers);
       resetForm();
-      setMessage({ type: "success", text: "Usuário atualizado com sucesso" });
+      setMessage({ type: "success", text: "Aluno atualizado com sucesso" });
     } catch (error) {
-      handleError(error, "Falha ao atualizar usuário");
+      handleError(error, "Falha ao atualizar aluno");
     } finally {
       setLoading(false);
     }
@@ -193,9 +193,9 @@ export default function CRUDPage() {
       setUsers(updatedUsers);
       setFilteredUsers(updatedUsers);
       resetForm();
-      setMessage({ type: "success", text: "Usuário excluído com sucesso" });
+      setMessage({ type: "success", text: "Aluno excluído com sucesso" });
     } catch (error) {
-      handleError(error, "Falha ao excluir usuário");
+      handleError(error, "Falha ao excluir aluno");
     } finally {
       setLoading(false);
     }
@@ -224,7 +224,7 @@ export default function CRUDPage() {
 
   return (
       <div style={styles.container}>
-        <h1 style={styles.header}>Gerenciamento de Usuários</h1>
+        <h1 style={styles.header}>Gerenciamento de Alunos</h1>
 
         {message && (
             <div style={{ ...styles.message, ...(message.type === "error" && styles.error) }}>
@@ -237,14 +237,14 @@ export default function CRUDPage() {
               style={{ ...styles.button, background: "#4CAF50", color: "white" }}
               onClick={() => setActiveOperation("create")}
           >
-            Criar Usuário
+            Criar Aluno
           </button>
         </div>
 
         <div style={{ marginBottom: "20px" }}>
           <input
               type="text"
-              placeholder="Buscar usuários..."
+              placeholder="Buscar alunos..."
               style={{
                 ...styles.input,
                 width: "100%",
@@ -259,7 +259,7 @@ export default function CRUDPage() {
         {(activeOperation === "create" || activeOperation === "update") && (
             <div style={styles.formContainer}>
               <h2 style={styles.formTitle}>
-                {activeOperation === "create" ? "Novo Usuário" : "Editar Usuário"}
+                {activeOperation === "create" ? "Novo Aluno" : "Editar Aluno"}
               </h2>
               <form onSubmit={activeOperation === "create" ? handleCreate : handleUpdate}>
                 <div style={styles.inputGroup}>
@@ -332,7 +332,7 @@ export default function CRUDPage() {
         )}
 
         <div>
-          <h2 style={{ marginBottom: "15px" }}>Lista de Usuários</h2>
+          <h2 style={{ marginBottom: "15px" }}>Lista de Alunos</h2>
           <table style={styles.table}>
             <thead>
             <tr>
