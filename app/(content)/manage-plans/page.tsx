@@ -208,7 +208,7 @@ export default function ManageWorkoutsPage() {
           );
         } else {
           await axios.post(
-            "${process.env.NEXT_PUBLIC_BASE_URL}/plan-composition",
+            `${process.env.NEXT_PUBLIC_BASE_URL}/plan-composition`,
             {
               exerciseId,
               userId: formData.userId,
